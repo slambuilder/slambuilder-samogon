@@ -59,6 +59,9 @@
 // From module: Common build items for user board support templates
 #include <user_board.h>
 
+// From module: Delay routines
+#include <delay.h>
+
 // From module: EXTINT - External Interrupt (Callback APIs)
 #include <extint.h>
 #include <extint_callback.h>
@@ -100,6 +103,10 @@
 // From module: Sleep manager - SAMD implementation
 #include <samd/sleepmgr.h>
 #include <sleepmgr.h>
+
+// From module: TCC - Timer Counter for Control Applications (Callback APIs)
+#include <tcc.h>
+#include <tcc_callback.h>
 
 // From module: USB - Universal Serial Bus
 #include <usb.h>
