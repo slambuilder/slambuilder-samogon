@@ -1,15 +1,5 @@
 #include <asf.h>
 
-// DAC on PA02
-#define BOARD_PINS_DAC_PORT 0
-#define BOARD_PINS_DAC_PIN 2
-
-#define CONF_PWM_MODULE			TCC0
-#define CONF_PWM_CHANNEL		0
-#define CONF_PWM_OUTPUT			0
-#define CONF_PWM_OUT_PIN		PIN_PA04E_TCC0_WO0
-#define CONF_PWM_OUT_MUX		MUX_PA04E_TCC0_WO0
-
 // This callback is triggered every ~1ms (1024 Hz)
 static void callbackTcc0(struct tcc_module *const module_inst)
 {
@@ -20,27 +10,28 @@ static void configureTcc0(struct tcc_module *pTcc)
 {
 	// configure TCC0 for ~1 ms generation (1024 Hz):
 	//	 - source GCLK1 (32K), prescaler 1, period 32, channel 0 trigger 15 (~50% duty cycle)
-	struct tcc_config config_tcc;
-	tcc_get_config_defaults(&config_tcc, CONF_PWM_MODULE);
-	config_tcc.counter.clock_source = GCLK_GENERATOR_1;
-	config_tcc.counter.clock_prescaler = TCC_CLOCK_PRESCALER_DIV1;
-	config_tcc.counter.period = 31;
-	config_tcc.compare.wave_generation = TCC_WAVE_GENERATION_SINGLE_SLOPE_PWM;
-	config_tcc.compare.match[CONF_PWM_CHANNEL] = 16;
-	config_tcc.pins.enable_wave_out_pin[CONF_PWM_OUTPUT] = true;
-	config_tcc.pins.wave_out_pin[CONF_PWM_OUTPUT]        = CONF_PWM_OUT_PIN;
-	config_tcc.pins.wave_out_pin_mux[CONF_PWM_OUTPUT]    = CONF_PWM_OUT_MUX;
-	tcc_init(pTcc, CONF_PWM_MODULE, &config_tcc);
+	struct tcc_config config;
+	tcc_get_config_defaults(&config, CONF_BOARD_TCC_MODULE);
+	config.counter.clock_source = GCLK_GENERATOR_1;
+	config.counter.clock_prescaler = TCC_CLOCK_PRESCALER_DIV1;
+	config.counter.period = 31;
+	config.compare.wave_generation = TCC_WAVE_GENERATION_SINGLE_SLOPE_PWM;
+	config.compare.match[CONF_BOARD_TCC_CHANNEL] = 16;
+	config.pins.enable_wave_out_pin[CONF_BOARD_TCC_OUTPUT] = true;
+	config.pins.wave_out_pin[CONF_BOARD_TCC_OUTPUT]        = CONF_BOARD_TCC_OUT_PIN;
+	config.pins.wave_out_pin_mux[CONF_BOARD_TCC_OUTPUT]    = CONF_BOARD_TCC_OUT_MUX;
+
+	tcc_init(pTcc, CONF_BOARD_TCC_MODULE, &config);
 	tcc_enable(pTcc);
 
 	// configure TCC0 callback
-	tcc_register_callback(pTcc, callbackTcc0, (enum tcc_callback)CONF_PWM_CHANNEL);
-	tcc_enable_callback(pTcc, (enum tcc_callback)CONF_PWM_CHANNEL);
+	tcc_register_callback(pTcc, callbackTcc0, (enum tcc_callback)CONF_BOARD_TCC_CHANNEL);
+	tcc_enable_callback(pTcc, (enum tcc_callback)CONF_BOARD_TCC_CHANNEL);
 }
 
 int main (void)
 {
-	struct tcc_module tcc_instance;
+	struct tcc_module tccModule0;
 	bool my_flag_autorize_cdc_transfer = true;
 
 	system_init();
@@ -50,21 +41,25 @@ int main (void)
 	udc_start();
 	delay_init();
 
-	PORT->Group[BOARD_PINS_DAC_PORT].DIRSET.reg	= 1 << BOARD_PINS_DAC_PIN;
-	// PORT->Group[BOARD_PINS_DAC_PORT].PINCFG[PIN_PA02B_DAC_VOUT]
+	struct port_config portConfig;
+	port_get_config_defaults(&portConfig);
+	portConfig.direction = PORT_PIN_DIR_OUTPUT;
+	portConfig.powersave = false;
+	port_pin_set_config(CONF_BOARD_MAX31855_SS_OUT_PIN, &portConfig);
+	port_pin_set_output_level(CONF_BOARD_MAX31855_SS_OUT_PIN, true);
 
-	configureTcc0(&tcc_instance);
+	configureTcc0(&tccModule0);
 
 	/* Replace with your application code */
 	while (1)
 	{
 		// Echo all input back to CDC port
-		 if (my_flag_autorize_cdc_transfer) {
+		if (my_flag_autorize_cdc_transfer) {
 			char c = udi_cdc_getc();
-			udi_cdc_putc(c);
-		 }
-		 // delay_ms(10);
-		PORT->Group[BOARD_PINS_DAC_PORT].OUTTGL.reg = 1 << BOARD_PINS_DAC_PIN;
+			udi_cdc_putc(c + 1);
+		}
+		// delay_ms(10);
+		port_pin_toggle_output_level(CONF_BOARD_MAX31855_SS_OUT_PIN);
 	}
 }
 
