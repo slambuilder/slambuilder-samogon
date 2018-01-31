@@ -33,9 +33,10 @@
     <option id="common.services.basic.sleepmgr" value="Add" config="" content-id="Atmel.ASF" />
     <option id="common.services.usb.class.device" value="Add" config="cdc" content-id="Atmel.ASF" />
     <option id="common2.services.delay" value="Add" config="systick" content-id="Atmel.ASF" />
+    <option id="sam0.drivers.port" value="Add" config="" content-id="Atmel.ASF" />
     <option id="sam0.drivers.system" value="Add" config="" content-id="Atmel.ASF" />
     <option id="sam0.drivers.tcc" value="Add" config="callback" content-id="Atmel.ASF" />
-    <option id="sam0.drivers.port" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="sam0.drivers.sercom.spi" value="Add" config="callback" content-id="Atmel.ASF" />
     <option id="sam0.utils.linker_scripts" value="Add" config="" content-id="Atmel.ASF" />
   </options>
   <configurations>
@@ -250,6 +251,21 @@
     <file path="src/ASF/sam0/drivers/tcc/quick_start_callback/qs_tcc_callback.h" framework="" version="3.32.0" source="sam0\drivers\tcc\quick_start_callback\qs_tcc_callback.h" changed="False" content-id="Atmel.ASF" />
     <file path="src/ASF/sam0/drivers/tcc/quick_start/qs_tcc_basic.h" framework="" version="3.32.0" source="sam0\drivers\tcc\quick_start\qs_tcc_basic.h" changed="False" content-id="Atmel.ASF" />
     <file path="src/ASF/sam0/drivers/tcc/tcc_callback.h" framework="" version="3.32.0" source="sam0\drivers\tcc\tcc_callback.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/sercom_interrupt.c" framework="" version="3.32.0" source="sam0\drivers\sercom\sercom_interrupt.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/sercom.c" framework="" version="3.32.0" source="sam0\drivers\sercom\sercom.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/sercom_interrupt.h" framework="" version="3.32.0" source="sam0\drivers\sercom\sercom_interrupt.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/sercom_pinout.h" framework="" version="3.32.0" source="sam0\drivers\sercom\sercom_pinout.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/sercom.h" framework="" version="3.32.0" source="sam0\drivers\sercom\sercom.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/spi_interrupt.c" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\spi_interrupt.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/spi.c" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\spi.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/quick_start_dma/qs_spi_dma_use.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\quick_start_dma\qs_spi_dma_use.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/spi_interrupt.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\spi_interrupt.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/quick_start_master_callback/qs_spi_master_callback.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\quick_start_master_callback\qs_spi_master_callback.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/spi.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\spi.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/quick_start_slave/qs_spi_slave_basic.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\quick_start_slave\qs_spi_slave_basic.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/quick_start_slave_callback/qs_spi_slave_callback.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\quick_start_slave_callback\qs_spi_slave_callback.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/sam0/drivers/sercom/spi/quick_start_master/qs_spi_master_basic.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\quick_start_master\qs_spi_master_basic.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/Config/conf_spi.h" framework="" version="3.32.0" source="sam0\drivers\sercom\spi\module_config\conf_spi.h" changed="False" content-id="Atmel.ASF" />
   </files>
   <documentation help="http://asf.atmel.com/docs/3.32.0/common.applications.user_application.sam0_system.user_board.atsamd21g18a/html/index.html" />
   <offline-documentation help="" />
@@ -295,6 +311,7 @@
       <Value>EXTINT_CALLBACK_MODE=true</Value>
       <Value>SYSTICK_MODE</Value>
       <Value>TCC_ASYNC=true</Value>
+      <Value>SPI_CALLBACK_MODE=true</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -335,6 +352,8 @@
       <Value>../src/ASF/common2/services/delay</Value>
       <Value>../src/ASF/common2/services/delay/sam0</Value>
       <Value>../src/ASF/sam0/drivers/tcc</Value>
+      <Value>../src/ASF/sam0/drivers/sercom</Value>
+      <Value>../src/ASF/sam0/drivers/sercom/spi</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize for size (-Os)</armgcc.compiler.optimization.level>
@@ -398,9 +417,11 @@
       <Value>../src/ASF/common2/services/delay</Value>
       <Value>../src/ASF/common2/services/delay/sam0</Value>
       <Value>../src/ASF/sam0/drivers/tcc</Value>
+      <Value>../src/ASF/sam0/drivers/sercom</Value>
+      <Value>../src/ASF/sam0/drivers/sercom/spi</Value>
     </ListValues>
   </armgcc.assembler.general.IncludePaths>
-  <armgcc.preprocessingassembler.general.AssemblerFlags>-DARM_MATH_CM0PLUS=true -DBOARD=USER_BOARD -DUSB_DEVICE_LPM_SUPPORT -DUDD_ENABLE -DEXTINT_CALLBACK_MODE=true -DSYSTICK_MODE -DTCC_ASYNC=true</armgcc.preprocessingassembler.general.AssemblerFlags>
+  <armgcc.preprocessingassembler.general.AssemblerFlags>-DARM_MATH_CM0PLUS=true -DBOARD=USER_BOARD -DUSB_DEVICE_LPM_SUPPORT -DUDD_ENABLE -DEXTINT_CALLBACK_MODE=true -DSYSTICK_MODE -DTCC_ASYNC=true -DSPI_CALLBACK_MODE=true</armgcc.preprocessingassembler.general.AssemblerFlags>
   <armgcc.preprocessingassembler.general.IncludePaths>
     <ListValues>
       <Value>%24(PackRepoDir)\atmel\SAMD21_DFP\1.0.231\samd21a\include</Value>
@@ -441,6 +462,8 @@
       <Value>../src/ASF/common2/services/delay</Value>
       <Value>../src/ASF/common2/services/delay/sam0</Value>
       <Value>../src/ASF/sam0/drivers/tcc</Value>
+      <Value>../src/ASF/sam0/drivers/sercom</Value>
+      <Value>../src/ASF/sam0/drivers/sercom/spi</Value>
     </ListValues>
   </armgcc.preprocessingassembler.general.IncludePaths>
 </ArmGcc>
@@ -464,6 +487,7 @@
       <Value>EXTINT_CALLBACK_MODE=true</Value>
       <Value>SYSTICK_MODE</Value>
       <Value>TCC_ASYNC=true</Value>
+      <Value>SPI_CALLBACK_MODE=true</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -504,6 +528,8 @@
       <Value>../src/ASF/common2/services/delay</Value>
       <Value>../src/ASF/common2/services/delay/sam0</Value>
       <Value>../src/ASF/sam0/drivers/tcc</Value>
+      <Value>../src/ASF/sam0/drivers/sercom</Value>
+      <Value>../src/ASF/sam0/drivers/sercom/spi</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize (-O1)</armgcc.compiler.optimization.level>
@@ -568,10 +594,12 @@
       <Value>../src/ASF/common2/services/delay</Value>
       <Value>../src/ASF/common2/services/delay/sam0</Value>
       <Value>../src/ASF/sam0/drivers/tcc</Value>
+      <Value>../src/ASF/sam0/drivers/sercom</Value>
+      <Value>../src/ASF/sam0/drivers/sercom/spi</Value>
     </ListValues>
   </armgcc.assembler.general.IncludePaths>
   <armgcc.assembler.debugging.DebugLevel>Default (-g)</armgcc.assembler.debugging.DebugLevel>
-  <armgcc.preprocessingassembler.general.AssemblerFlags>-DARM_MATH_CM0PLUS=true -DBOARD=USER_BOARD -DUSB_DEVICE_LPM_SUPPORT -DUDD_ENABLE -DEXTINT_CALLBACK_MODE=true -DSYSTICK_MODE -DTCC_ASYNC=true</armgcc.preprocessingassembler.general.AssemblerFlags>
+  <armgcc.preprocessingassembler.general.AssemblerFlags>-DARM_MATH_CM0PLUS=true -DBOARD=USER_BOARD -DUSB_DEVICE_LPM_SUPPORT -DUDD_ENABLE -DEXTINT_CALLBACK_MODE=true -DSYSTICK_MODE -DTCC_ASYNC=true -DSPI_CALLBACK_MODE=true</armgcc.preprocessingassembler.general.AssemblerFlags>
   <armgcc.preprocessingassembler.general.IncludePaths>
     <ListValues>
       <Value>%24(PackRepoDir)\atmel\SAMD21_DFP\1.0.231\samd21a\include</Value>
@@ -612,6 +640,8 @@
       <Value>../src/ASF/common2/services/delay</Value>
       <Value>../src/ASF/common2/services/delay/sam0</Value>
       <Value>../src/ASF/sam0/drivers/tcc</Value>
+      <Value>../src/ASF/sam0/drivers/sercom</Value>
+      <Value>../src/ASF/sam0/drivers/sercom/spi</Value>
     </ListValues>
   </armgcc.preprocessingassembler.general.IncludePaths>
   <armgcc.preprocessingassembler.debugging.DebugLevel>Default (-Wa,-g)</armgcc.preprocessingassembler.debugging.DebugLevel>
@@ -725,6 +755,48 @@
       <SubType>compile</SubType>
     </None>
     <None Include="src\ASF\sam0\drivers\port\port.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\sam0\drivers\sercom\sercom.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam0\drivers\sercom\sercom.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\sam0\drivers\sercom\sercom_interrupt.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam0\drivers\sercom\sercom_interrupt.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam0\drivers\sercom\sercom_pinout.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\quick_start_dma\qs_spi_dma_use.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\quick_start_master_callback\qs_spi_master_callback.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\quick_start_slave\qs_spi_slave_basic.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\quick_start_slave_callback\qs_spi_slave_callback.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\quick_start_master\qs_spi_master_basic.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\sam0\drivers\sercom\spi\spi.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\spi.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\sam0\drivers\sercom\spi\spi_interrupt.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\sam0\drivers\sercom\spi\spi_interrupt.h">
       <SubType>compile</SubType>
     </None>
     <Compile Include="src\ASF\sam0\drivers\system\clock\clock_samd21_r21_da\clock.c">
@@ -1240,6 +1312,9 @@
     <None Include="src\config\conf_extint.h">
       <SubType>compile</SubType>
     </None>
+    <None Include="src\config\conf_spi.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\main.c">
       <SubType>compile</SubType>
     </Compile>
@@ -1271,6 +1346,13 @@
     <Folder Include="src\ASF\sam0\drivers\extint\extint_sam_d_r\" />
     <Folder Include="src\ASF\sam0\drivers\port\" />
     <Folder Include="src\ASF\sam0\drivers\port\quick_start\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\spi\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\spi\quick_start_dma\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\spi\quick_start_master\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\spi\quick_start_master_callback\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\spi\quick_start_slave\" />
+    <Folder Include="src\ASF\sam0\drivers\sercom\spi\quick_start_slave_callback\" />
     <Folder Include="src\ASF\sam0\drivers\system\" />
     <Folder Include="src\ASF\sam0\drivers\system\clock\" />
     <Folder Include="src\ASF\sam0\drivers\system\clock\clock_samd21_r21_da\" />

@@ -1,9 +1,9 @@
 /**
  * \file
  *
- * \brief User board configuration template
+ * \brief SAM Serial Peripheral Interface Driver
  *
- * Copyright (C) 2013-2015 Atmel Corporation. All rights reserved.
+ * Copyright (C) 2012-2015 Atmel Corporation. All rights reserved.
  *
  * \asf_license_start
  *
@@ -43,32 +43,30 @@
 /*
  * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
  */
+#ifndef SERCOM_INTERRUPT_H_INCLUDED
+#define SERCOM_INTERRUPT_H_INCLUDED
 
-#ifndef CONF_BOARD_H
-#define CONF_BOARD_H
+#include "sercom.h"
+#include <system_interrupt.h>
 
-#define CONF_BOARD_USB_PORT
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-// TCC0 waveform output on PA09
-#define CONF_BOARD_TCC_MODULE		TCC0
-#define CONF_BOARD_TCC_CHANNEL		1
-#define CONF_BOARD_TCC_OUTPUT		1
-#define CONF_BOARD_TCC_OUT_PIN		PIN_PA09E_TCC0_WO1
-#define CONF_BOARD_TCC_OUT_MUX		MUX_PA09E_TCC0_WO1
+/* Look-up table for device instances */
+extern void *_sercom_instances[SERCOM_INST_NUM];
 
-// GPIO Inverted Slave Select Pin (!SS) on PA18
-#define CONF_BOARD_MAX31855_SS_OUT_PIN PIN_PA18
-#define CONF_BOARD_MAX31855_SS_OUT_PORT PORT_PA18
+typedef void (*sercom_handler_t)(uint8_t instance);
 
-#define CONF_BOARD_MAX31855_SERCOM				SERCOM1
-#define CONF_BOARD_MAX31855_SERCOM_MUX_SETTING	SPI_SIGNAL_MUX_SETTING_D
-// MOSI
-#define CONF_BOARD_MAX31855_SERCOM_PAD0			PINMUX_PA16C_SERCOM1_PAD0
-// SCK
-#define CONF_BOARD_MAX31855_SERCOM_PAD1			PINMUX_PA17C_SERCOM1_PAD1
-// Don not uncomment this line -- pad2 is not used!!!
-// #define CONF_BOARD_MAX31855_SERCOM_PAD2			PINMUX_PA18C_SERCOM1_PAD2
-// MISO
-#define CONF_BOARD_MAX31855_SERCOM_PAD3			PINMUX_PA19C_SERCOM1_PAD3
+enum system_interrupt_vector _sercom_get_interrupt_vector(
+		Sercom *const sercom_instance);
 
-#endif // CONF_BOARD_H
+void _sercom_set_handler(
+		const uint8_t instance,
+		const sercom_handler_t interrupt_handler);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* SERCOM_INTERRUPT_H_INCLUDED */
