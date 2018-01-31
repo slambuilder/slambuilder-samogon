@@ -649,6 +649,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="src\Max31855.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Max31855.h">
+      <SubType>compile</SubType>
+    </Compile>
     <None Include="atmel_devices_cdc.cat">
       <SubType>compile</SubType>
     </None>

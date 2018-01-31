@@ -1,4 +1,5 @@
 #include <asf.h>
+#include <Max31855.h>
 
 // This callback is triggered every ~1ms (1024 Hz)
 static void callbackTcc0(struct tcc_module *const module_inst)
@@ -82,36 +83,55 @@ struct Max31855Packet
 
 void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
 {
-	// read from SPI
-	uint8_t bufferSpiRead[4];
-	spi_select_slave(pSpiModuleTempSensor, pSpiSlaveInstance, true);
-	spi_read_buffer_wait(pSpiModuleTempSensor, bufferSpiRead, sizeof(bufferSpiRead), 0);
-	spi_select_slave(pSpiModuleTempSensor, pSpiSlaveInstance, false);
+	//// read from SPI
+	//uint8_t bufferSpiRead[4];
+	//spi_select_slave(pSpiModuleTempSensor, pSpiSlaveInstance, true);
+	//spi_read_buffer_wait(pSpiModuleTempSensor, bufferSpiRead, sizeof(bufferSpiRead), 0);
+	//spi_select_slave(pSpiModuleTempSensor, pSpiSlaveInstance, false);
+//
+	//// print raw data
+	//udi_cdc_write_buf("Binary data read from MAX31855: ", 35);
+	//printBinaryDataToCdc(bufferSpiRead, sizeof(bufferSpiRead));
+	//udi_cdc_write_buf("\n\r", 2);
+//
+	//union {
+		//uint8_t binary[4];
+		//struct Max31855Packet packet;
+	//} u;
+//
+	//u.binary[0] = bufferSpiRead[3];
+	//u.binary[1] = bufferSpiRead[2];
+	//u.binary[2] = bufferSpiRead[1];
+	//u.binary[3] = bufferSpiRead[0];
+//
+	//char printBuf[100];
+	//int len = snprintf(
+		//printBuf, 
+		//sizeof(printBuf), 
+		//"temp: %d, int: %d, failed: %d\n\r", 
+		//u.packet.TempMagnitude, 
+		//u.packet.IntTempMagnitude, 
+		//u.packet.Fault);
+	//udi_cdc_write_buf(printBuf, len);
 
-	// print raw data
-	udi_cdc_write_buf("Binary data read from MAX31855: ", 35);
-	printBinaryDataToCdc(bufferSpiRead, sizeof(bufferSpiRead));
-	udi_cdc_write_buf("\n\r", 2);
+	struct Max31855Data tempData;
+	if (max31855ReadData(pSpiModuleTempSensor, pSpiSlaveInstance, &tempData))
+	{
+		char tempStr[20];
+		char internalTempStr[20];
+		formatFloat(tempData.Temp, tempStr, sizeof(tempStr), false, 0, 2);
+		formatFloat(tempData.InternalTemp, internalTempStr, sizeof(internalTempStr), false, 0, 2);
 
-	union {
-		uint8_t binary[4];
-		struct Max31855Packet packet;
-	} u;
-
-	u.binary[0] = bufferSpiRead[3];
-	u.binary[1] = bufferSpiRead[2];
-	u.binary[2] = bufferSpiRead[1];
-	u.binary[3] = bufferSpiRead[0];
-
-	char printBuf[100];
-	int len = snprintf(
-		printBuf, 
-		sizeof(printBuf), 
-		"temp: %d, int: %d, failed: %d\n\r", 
-		u.packet.TempMagnitude, 
-		u.packet.IntTempMagnitude, 
-		u.packet.Fault);
-	udi_cdc_write_buf(printBuf, len);
+		char printBuf[100];
+		int len = snprintf(printBuf, sizeof(printBuf), "temp: %s, int: %s\n\r", tempStr, internalTempStr);
+		udi_cdc_write_buf(printBuf, len);
+	}
+	else 
+	{
+		udi_cdc_write_buf("Failure reading temp sensor. Failure code: ", 43);
+		udi_cdc_putc(tempData.FailureType + '0');
+		udi_cdc_write_buf("\n\r", 2);
+	}
 }
 
 int main (void)
