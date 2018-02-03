@@ -1,5 +1,6 @@
-#include <asf.h>
-#include <Max31855.h>
+#include "asf.h"
+#include "Max31855.h"
+#include "utils.h"
 
 // This callback is triggered every ~1ms (1024 Hz)
 static void callbackTcc0(struct tcc_module *const module_inst)
@@ -50,70 +51,8 @@ void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_
 	spi_enable(pSpiModuleTempSensor);
 }
 
-char intToHex(uint8_t i)
-{
-	return (i < 10) ? (char)(i + '0') : (char)(i - 10 + 'A');
-}
-
-void printBinaryDataToCdc(uint8_t *pBuffer, int size)
-{
-	char ach[3];
-	ach[2] = ' ';
-	for (int i = 0; i < size; i++) {
-		ach[0] = intToHex(pBuffer[i] / 16);
-		ach[1] = intToHex(pBuffer[i] % 16);
-		udi_cdc_write_buf(ach, i < size-1 ? 3 : 2 );
-	}
-}
-
-struct Max31855Packet
-{
-	uint8_t OC: 1;
-	uint8_t SVG: 1;
-	uint8_t SVC: 1;
-	uint8_t Reserved0: 1;
-	uint16_t IntTempMagnitude: 11;
-	uint8_t IntTempSign: 1;
-
-	uint8_t Fault: 1;
-	uint8_t Reserved1: 1;
-	uint16_t TempMagnitude: 13;
-	uint8_t TempSign : 1;
-};
-
 void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
 {
-	//// read from SPI
-	//uint8_t bufferSpiRead[4];
-	//spi_select_slave(pSpiModuleTempSensor, pSpiSlaveInstance, true);
-	//spi_read_buffer_wait(pSpiModuleTempSensor, bufferSpiRead, sizeof(bufferSpiRead), 0);
-	//spi_select_slave(pSpiModuleTempSensor, pSpiSlaveInstance, false);
-//
-	//// print raw data
-	//udi_cdc_write_buf("Binary data read from MAX31855: ", 35);
-	//printBinaryDataToCdc(bufferSpiRead, sizeof(bufferSpiRead));
-	//udi_cdc_write_buf("\n\r", 2);
-//
-	//union {
-		//uint8_t binary[4];
-		//struct Max31855Packet packet;
-	//} u;
-//
-	//u.binary[0] = bufferSpiRead[3];
-	//u.binary[1] = bufferSpiRead[2];
-	//u.binary[2] = bufferSpiRead[1];
-	//u.binary[3] = bufferSpiRead[0];
-//
-	//char printBuf[100];
-	//int len = snprintf(
-		//printBuf, 
-		//sizeof(printBuf), 
-		//"temp: %d, int: %d, failed: %d\n\r", 
-		//u.packet.TempMagnitude, 
-		//u.packet.IntTempMagnitude, 
-		//u.packet.Fault);
-	//udi_cdc_write_buf(printBuf, len);
-
 	struct Max31855Data tempData;
 	if (max31855ReadData(pSpiModuleTempSensor, pSpiSlaveInstance, &tempData))
 	{

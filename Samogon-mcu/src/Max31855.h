@@ -21,6 +21,4 @@ bool max31855ReadData(
 	struct spi_slave_inst *pSpiSlaveInstance, 
 	struct Max31855Data *pData);
 
-bool formatFloat(float f, char *pBuffer, int bufferSize, bool forceSign, int digits, int precision);
-
 #endif /* MAX31855_H_ */
