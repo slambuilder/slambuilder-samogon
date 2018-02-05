@@ -1,6 +1,7 @@
 #include "asf.h"
 #include "utils.h"
 #include <math.h>
+#include <stdarg.h>
 
 char intToHex(uint8_t i)
 {
@@ -16,6 +17,21 @@ void printBinaryDataToCdc(uint8_t *pBuffer, int size)
 		ach[1] = intToHex(pBuffer[i] % 16);
 		udi_cdc_write_buf(ach, i < size-1 ? 3 : 2 );
 	}
+}
+
+void printfToCdc(const char *format, ...)
+{
+	char buffer[100];
+	va_list vl;
+	va_start(vl, format);
+
+	int i = vsnprintf(buffer, sizeof(buffer), format, vl);
+	if (i > 0)
+	{
+		udi_cdc_write_buf(buffer, i);
+	}
+
+	va_end(vl);
 }
 
 // reverses a string 'str' of length 'len'
@@ -74,7 +90,8 @@ bool formatFloat(float f, char *pBuffer, int bufferSize, bool forceSign, int dig
 	f = fabsf(f);
 
 	// Extract integer and floating parts
-	int ipart = (int)floor(f);
+	double ipartDouble = floor(f);
+	int ipart = (int)ipartDouble;
 	float fpart = f - (float)ipart;
 	
 	// convert integer part to string

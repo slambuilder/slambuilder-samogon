@@ -5,5 +5,6 @@ bool formatFloat(float f, char *pBuffer, int bufferSize, bool forceSign, int dig
 
 char intToHex(uint8_t i);
 void printBinaryDataToCdc(uint8_t *pBuffer, int size);
+void printfToCdc(const char *format, ...)  __attribute__ ((format (gnu_printf, 1, 2)));
 
 #endif /* UTILS_H_ */
