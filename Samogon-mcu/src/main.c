@@ -191,10 +191,102 @@ void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct s
 	}
 }
 
+typedef struct TAppData
+{
+	Sitronix7735 tft;
+	struct spi_module spiModuleTempSensor;
+	struct spi_slave_inst spiSlaveInstance;
+	TaskHandle_t hTaskCdcLoop;
+} AppData;
+
+bool g_flag_autorize_cdc_transfer = true;
+
+void taskCdcLoop(void *pvParameters)
+{
+	AppData *pAppData = (AppData*)pvParameters;
+
+	while (1)
+	{
+		// Echo all input back to CDC port
+		if (g_flag_autorize_cdc_transfer) {
+			char c = udi_cdc_getc();
+			if (c == 't') {
+				interactiveReadTempSensor(&pAppData->spiModuleTempSensor, &pAppData->spiSlaveInstance);
+			} else if (c == 'z') {
+				printfToCdc("Zero cross count: %u\n\r", g_zeroCrossCount);
+			} else if (c == 'f') {
+				Sitronix7735 *pTft = &pAppData->tft;
+				pTft->m_base.vt->pfnFillScreen(pTft, ST7735_RGB(5, 10, 5));
+				pTft->m_base.vt->pfnSetRotation(pTft, 3);
+				AdafruitGfx_setTextSize(pTft, 2);
+				AdafruitGfx_setCursor(pTft, 0, 0);
+				pTft->m_base.vt->pfnWrite(pTft, 'a');
+				pTft->m_base.vt->pfnWrite(pTft, 'b');
+				pTft->m_base.vt->pfnWrite(pTft, 'c');
+				pTft->m_base.vt->pfnWrite(pTft, 'd');
+				pTft->m_base.vt->pfnWrite(pTft, 'e');
+				pTft->m_base.vt->pfnWrite(pTft, 'f');
+				pTft->m_base.vt->pfnWrite(pTft, 'g');
+				pTft->m_base.vt->pfnWrite(pTft, 'h');
+				pTft->m_base.vt->pfnWrite(pTft, 'i');
+				pTft->m_base.vt->pfnWrite(pTft, 'j');
+				pTft->m_base.vt->pfnWrite(pTft, 'k');
+				pTft->m_base.vt->pfnWrite(pTft, 'l');
+				pTft->m_base.vt->pfnWrite(pTft, 'm');
+				AdafruitGfx_setCursor(pTft, 0, 20);
+				pTft->m_base.vt->pfnWrite(pTft, 'A');
+				pTft->m_base.vt->pfnWrite(pTft, 'B');
+				pTft->m_base.vt->pfnWrite(pTft, 'C');
+				pTft->m_base.vt->pfnWrite(pTft, 'D');
+				pTft->m_base.vt->pfnWrite(pTft, 'E');
+				pTft->m_base.vt->pfnWrite(pTft, 'F');
+				pTft->m_base.vt->pfnWrite(pTft, 'G');
+				pTft->m_base.vt->pfnWrite(pTft, 'H');
+				pTft->m_base.vt->pfnWrite(pTft, 'I');
+				pTft->m_base.vt->pfnWrite(pTft, 'J');
+				pTft->m_base.vt->pfnWrite(pTft, 'K');
+				pTft->m_base.vt->pfnWrite(pTft, 'L');
+				pTft->m_base.vt->pfnWrite(pTft, 'M');
+				AdafruitGfx_setCursor(pTft, 0, 40);
+				pTft->m_base.vt->pfnWrite(pTft, '0');
+				pTft->m_base.vt->pfnWrite(pTft, '1');
+				pTft->m_base.vt->pfnWrite(pTft, '2');
+				pTft->m_base.vt->pfnWrite(pTft, '3');
+				pTft->m_base.vt->pfnWrite(pTft, '4');
+				pTft->m_base.vt->pfnWrite(pTft, '5');
+				pTft->m_base.vt->pfnWrite(pTft, '6');
+				pTft->m_base.vt->pfnWrite(pTft, '7');
+				pTft->m_base.vt->pfnWrite(pTft, '8');
+				pTft->m_base.vt->pfnWrite(pTft, '9');
+				pTft->m_base.vt->pfnWrite(pTft, '-');
+				pTft->m_base.vt->pfnWrite(pTft, '+');
+				pTft->m_base.vt->pfnWrite(pTft, '[');
+				AdafruitGfx_setCursor(pTft, 0, 60);
+				pTft->m_base.vt->pfnWrite(pTft, '!');
+				pTft->m_base.vt->pfnWrite(pTft, '@');
+				pTft->m_base.vt->pfnWrite(pTft, '#');
+				pTft->m_base.vt->pfnWrite(pTft, '$');
+				pTft->m_base.vt->pfnWrite(pTft, '%');
+				pTft->m_base.vt->pfnWrite(pTft, '^');
+				pTft->m_base.vt->pfnWrite(pTft, '&');
+				pTft->m_base.vt->pfnWrite(pTft, '*');
+				pTft->m_base.vt->pfnWrite(pTft, '(');
+				pTft->m_base.vt->pfnWrite(pTft, ')');
+				pTft->m_base.vt->pfnWrite(pTft, ';');
+				pTft->m_base.vt->pfnWrite(pTft, ':');
+				pTft->m_base.vt->pfnWrite(pTft, '{');
+			} else {
+				udi_cdc_write_buf("Samogon: Unknown command: ", 26);
+				udi_cdc_putc(c);
+				udi_cdc_write_buf("\n\r", 2);
+			}
+		}
+	}
+}
+
 int main (void)
 {
 	struct tcc_module tccModule0;
-	bool my_flag_autorize_cdc_transfer = true;
 
 	system_init();
 	irq_initialize_vectors();
@@ -207,99 +299,30 @@ int main (void)
 	configureGpioInterrupts();
 	system_interrupt_enable_global();
 
-	Sitronix7735 tft;
+	AppData appData;
 
-	configureTftDisplayPorts(&tft);
+	configureTftDisplayPorts(&appData.tft);
 
-	struct spi_module spiModuleTempSensor;
-	struct spi_slave_inst spiSlaveInstance;
+	configureSpiTempSensor(&appData.spiModuleTempSensor, &appData.spiSlaveInstance);
 
-	configureSpiTempSensor(&spiModuleTempSensor, &spiSlaveInstance);
+	printfToCdc("Starting RTOS ... \n\r");
 
-	while (1)
-	{
-		// Echo all input back to CDC port
-		if (my_flag_autorize_cdc_transfer) {
-			char c = udi_cdc_getc();
-			if (c == 't') {
-				interactiveReadTempSensor(&spiModuleTempSensor, &spiSlaveInstance);
-			} else if (c == 'z') {
-				printfToCdc("Zero cross count: %u\n\r", g_zeroCrossCount);
-			} else if (c == 'f') {
-					tft.m_base.vt->pfnFillScreen(&tft, ST7735_RGB(5, 10, 5));
-					tft.m_base.vt->pfnSetRotation(&tft, 3);
-					AdafruitGfx_setTextSize(&tft, 2);
-					AdafruitGfx_setCursor(&tft, 0, 0);
-					tft.m_base.vt->pfnWrite(&tft, 'a');
-					tft.m_base.vt->pfnWrite(&tft, 'b');
-					tft.m_base.vt->pfnWrite(&tft, 'c');
-					tft.m_base.vt->pfnWrite(&tft, 'd');
-					tft.m_base.vt->pfnWrite(&tft, 'e');
-					tft.m_base.vt->pfnWrite(&tft, 'f');
-					tft.m_base.vt->pfnWrite(&tft, 'g');
-					tft.m_base.vt->pfnWrite(&tft, 'h');
-					tft.m_base.vt->pfnWrite(&tft, 'i');
-					tft.m_base.vt->pfnWrite(&tft, 'j');
-					tft.m_base.vt->pfnWrite(&tft, 'k');
-					tft.m_base.vt->pfnWrite(&tft, 'l');
-					tft.m_base.vt->pfnWrite(&tft, 'm');
-					AdafruitGfx_setCursor(&tft, 0, 20);
-					tft.m_base.vt->pfnWrite(&tft, 'A');
-					tft.m_base.vt->pfnWrite(&tft, 'B');
-					tft.m_base.vt->pfnWrite(&tft, 'C');
-					tft.m_base.vt->pfnWrite(&tft, 'D');
-					tft.m_base.vt->pfnWrite(&tft, 'E');
-					tft.m_base.vt->pfnWrite(&tft, 'F');
-					tft.m_base.vt->pfnWrite(&tft, 'G');
-					tft.m_base.vt->pfnWrite(&tft, 'H');
-					tft.m_base.vt->pfnWrite(&tft, 'I');
-					tft.m_base.vt->pfnWrite(&tft, 'J');
-					tft.m_base.vt->pfnWrite(&tft, 'K');
-					tft.m_base.vt->pfnWrite(&tft, 'L');
-					tft.m_base.vt->pfnWrite(&tft, 'M');
-					AdafruitGfx_setCursor(&tft, 0, 40);
-					tft.m_base.vt->pfnWrite(&tft, '0');
-					tft.m_base.vt->pfnWrite(&tft, '1');
-					tft.m_base.vt->pfnWrite(&tft, '2');
-					tft.m_base.vt->pfnWrite(&tft, '3');
-					tft.m_base.vt->pfnWrite(&tft, '4');
-					tft.m_base.vt->pfnWrite(&tft, '5');
-					tft.m_base.vt->pfnWrite(&tft, '6');
-					tft.m_base.vt->pfnWrite(&tft, '7');
-					tft.m_base.vt->pfnWrite(&tft, '8');
-					tft.m_base.vt->pfnWrite(&tft, '9');
-					tft.m_base.vt->pfnWrite(&tft, '-');
-					tft.m_base.vt->pfnWrite(&tft, '+');
-					tft.m_base.vt->pfnWrite(&tft, '[');
-					AdafruitGfx_setCursor(&tft, 0, 60);
-					tft.m_base.vt->pfnWrite(&tft, '!');
-					tft.m_base.vt->pfnWrite(&tft, '@');
-					tft.m_base.vt->pfnWrite(&tft, '#');
-					tft.m_base.vt->pfnWrite(&tft, '$');
-					tft.m_base.vt->pfnWrite(&tft, '%');
-					tft.m_base.vt->pfnWrite(&tft, '^');
-					tft.m_base.vt->pfnWrite(&tft, '&');
-					tft.m_base.vt->pfnWrite(&tft, '*');
-					tft.m_base.vt->pfnWrite(&tft, '(');
-					tft.m_base.vt->pfnWrite(&tft, ')');
-					tft.m_base.vt->pfnWrite(&tft, ';');
-					tft.m_base.vt->pfnWrite(&tft, ':');
-					tft.m_base.vt->pfnWrite(&tft, '{');
-			} else {
-				udi_cdc_write_buf("Samogon: Unknown command: ", 26);
-				udi_cdc_putc(c);
-				udi_cdc_write_buf("\n\r", 2);
-			}
-		}
-		delay_ms(10);
-	}
+	// Create at least one task before starting the kernel.
+	xTaskCreate(taskCdcLoop, "NAME", configMINIMAL_STACK_SIZE * 5, &appData, tskIDLE_PRIORITY, &appData.hTaskCdcLoop);
+
+	// Start the scheduler.
+	vTaskStartScheduler();
+
+	printfToCdc("Should never get here.\n\r");
 }
 
 bool samogon_callback_cdc_enable(void)
 {
+	g_flag_autorize_cdc_transfer = true;
 	return true;
 }
 
 void samogon_callback_cdc_disable(void)
 {
+	g_flag_autorize_cdc_transfer = false;
 }
