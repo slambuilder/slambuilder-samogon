@@ -3,35 +3,6 @@
 #include "utils.h"
 #include "Sitronix7735.h"
 
-// This callback is triggered every ~1ms (1024 Hz)
-static void callbackTcc0(struct tcc_module *const module_inst)
-{
-	// TODO: implement async continuation logic here.
-}
-
-static void configureTcc0(struct tcc_module *pTcc)
-{
-	// configure TCC0 for ~1 ms generation (1024 Hz):
-	//	 - source GCLK1 (32K), prescaler 1, period 32, channel 0 trigger 15 (~50% duty cycle)
-	struct tcc_config config;
-	tcc_get_config_defaults(&config, CONF_BOARD_TCC_MODULE);
-	config.counter.clock_source = GCLK_GENERATOR_1;
-	config.counter.clock_prescaler = TCC_CLOCK_PRESCALER_DIV1;
-	config.counter.period = 31;
-	config.compare.wave_generation = TCC_WAVE_GENERATION_SINGLE_SLOPE_PWM;
-	config.compare.match[CONF_BOARD_TCC_CHANNEL] = 16;
-	config.pins.enable_wave_out_pin[CONF_BOARD_TCC_OUTPUT] = true;
-	config.pins.wave_out_pin[CONF_BOARD_TCC_OUTPUT]        = CONF_BOARD_TCC_OUT_PIN;
-	config.pins.wave_out_pin_mux[CONF_BOARD_TCC_OUTPUT]    = CONF_BOARD_TCC_OUT_MUX;
-
-	tcc_init(pTcc, CONF_BOARD_TCC_MODULE, &config);
-	tcc_enable(pTcc);
-
-	// configure TCC0 callback
-	tcc_register_callback(pTcc, callbackTcc0, (enum tcc_callback)CONF_BOARD_TCC_CHANNEL);
-	tcc_enable_callback(pTcc, (enum tcc_callback)CONF_BOARD_TCC_CHANNEL);
-}
-
 void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
 {
 	struct spi_config spiConfig;
@@ -286,8 +257,6 @@ void taskCdcLoop(void *pvParameters)
 
 int main (void)
 {
-	struct tcc_module tccModule0;
-
 	system_init();
 	irq_initialize_vectors();
 	cpu_irq_enable();
@@ -295,7 +264,6 @@ int main (void)
 	udc_start();
 	delay_init();
 
-	configureTcc0(&tccModule0);
 	configureGpioInterrupts();
 	system_interrupt_enable_global();
 
@@ -305,15 +273,13 @@ int main (void)
 
 	configureSpiTempSensor(&appData.spiModuleTempSensor, &appData.spiSlaveInstance);
 
-	printfToCdc("Starting RTOS ... \n\r");
+	// Create tasks before starting the kernel.
 
-	// Create at least one task before starting the kernel.
-	xTaskCreate(taskCdcLoop, "NAME", configMINIMAL_STACK_SIZE * 5, &appData, tskIDLE_PRIORITY, &appData.hTaskCdcLoop);
+	// CDC loop task has low priority, just 1 above an idle
+	xTaskCreate(taskCdcLoop, "NAME", configMINIMAL_STACK_SIZE * 5, &appData, tskIDLE_PRIORITY + 1, &appData.hTaskCdcLoop);
 
-	// Start the scheduler.
+	// Start the scheduler. Normally, this function never returns.
 	vTaskStartScheduler();
-
-	printfToCdc("Should never get here.\n\r");
 }
 
 bool samogon_callback_cdc_enable(void)
