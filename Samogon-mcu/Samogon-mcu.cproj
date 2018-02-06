@@ -649,9 +649,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="src\AdafruitGfx\Adafruit_GFX.c">
+    <Compile Include="src\AdafruitGfx\Adafruit_GFX.c">
       <SubType>compile</SubType>
-    </None>
+    </Compile>
     <Compile Include="src\AdafruitGfx\Adafruit_GFX.h">
       <SubType>compile</SubType>
     </Compile>
@@ -811,9 +811,9 @@
     <Compile Include="src\AdafruitGfx\gfxfont.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\AdafruitGfx\glcdfont.c">
+    <None Include="src\AdafruitGfx\glcdfont.inl">
       <SubType>compile</SubType>
-    </Compile>
+    </None>
     <None Include="src\AdafruitST7735\Adafruit_ST7735.c">
       <SubType>compile</SubType>
     </None>
