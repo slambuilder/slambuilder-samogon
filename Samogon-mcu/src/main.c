@@ -10,6 +10,9 @@ void callbackPushButton(void);
 void callbackZeroCross(void);
 void tempSampleCallback(TimerHandle_t hTimer);
 
+#define TFT_BACKGROUND ST7735_RGB(30, 60, 30)
+#define TFT_TEXT_COLOR ST7735_RGB(1, 2, 1)
+
 void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
 {
 	struct spi_config spiConfig;
@@ -30,8 +33,6 @@ void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_
 	spi_init(pSpiModuleTempSensor, CONF_BOARD_MAX31855_SERCOM, &spiConfig);
 	spi_enable(pSpiModuleTempSensor);
 }
-
-uint32_t g_zeroCrossCount = 0;
 
 void configureInterruptForPin(
 	const uint32_t gpioPin, 
@@ -96,7 +97,8 @@ void configureTftDisplayPorts(Sitronix7735 *pTft)
 		CONF_BOARD_TFT_RST_OUT_PIN);
 
 	pTft->m_base.vt->pfnSetRotation(pTft, 3);
-	pTft->m_base.vt->pfnFillScreen(pTft,  ST7735_RGB(20, 40, 30));
+	pTft->m_base.vt->pfnFillScreen(pTft, TFT_BACKGROUND);
+	AdafruitGfx_setTextColorWithBg(pTft, TFT_TEXT_COLOR, TFT_BACKGROUND);
 
 	pTft->m_base.vt->pfnFillRect(pTft, 145,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
 	pTft->m_base.vt->pfnFillRect(pTft, 135, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x1f));	// blue
@@ -123,7 +125,7 @@ void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct s
 		formatFloat(tempData.InternalTemp, internalTempStr, sizeof(internalTempStr), false, 0, 2);
 
 		char printBuf[100];
-		int len = snprintf(printBuf, sizeof(printBuf), "temp: %s, int: %s\n\r", tempStr, internalTempStr);
+		int len = snprintf(printBuf, sizeof(printBuf), "temp: %s, int: %s, ticks: %u\n\r", tempStr, internalTempStr, xTaskGetTickCountFromISR());
 		udi_cdc_write_buf(printBuf, len);
 	}
 	else 
@@ -161,6 +163,7 @@ typedef struct TAppData
 	TimerHandle_t hTempSampleTimer;
 	float temperature;
 	float internalTemperature;
+	uint32_t zeroCrossCount;
 } AppData;
 
 // global instances
@@ -176,72 +179,17 @@ void taskCdcLoop(void *pvParameters)
 			if (c == 't') {
 				interactiveReadTempSensor(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor);
 			} else if (c == 'z') {
-				printfToCdc("Zero cross count: %u\n\r", g_zeroCrossCount);
+				printfToCdc("Zero cross count: %u\n\r", g_appData.zeroCrossCount);
 			} else if (c == 'f') {
 				Sitronix7735 *pTft = &g_appData.tft;
-				pTft->m_base.vt->pfnFillScreen(pTft, ST7735_RGB(5, 10, 5));
-				AdafruitGfx_setTextSize(pTft, 2);
-				AdafruitGfx_setCursor(pTft, 0, 0);
-				pTft->m_base.vt->pfnWrite(pTft, 'a');
-				pTft->m_base.vt->pfnWrite(pTft, 'b');
-				pTft->m_base.vt->pfnWrite(pTft, 'c');
-				pTft->m_base.vt->pfnWrite(pTft, 'd');
-				pTft->m_base.vt->pfnWrite(pTft, 'e');
-				pTft->m_base.vt->pfnWrite(pTft, 'f');
-				pTft->m_base.vt->pfnWrite(pTft, 'g');
-				pTft->m_base.vt->pfnWrite(pTft, 'h');
-				pTft->m_base.vt->pfnWrite(pTft, 'i');
-				pTft->m_base.vt->pfnWrite(pTft, 'j');
-				pTft->m_base.vt->pfnWrite(pTft, 'k');
-				pTft->m_base.vt->pfnWrite(pTft, 'l');
-				pTft->m_base.vt->pfnWrite(pTft, 'm');
-				AdafruitGfx_setCursor(pTft, 0, 20);
-				pTft->m_base.vt->pfnWrite(pTft, 'A');
-				pTft->m_base.vt->pfnWrite(pTft, 'B');
-				pTft->m_base.vt->pfnWrite(pTft, 'C');
-				pTft->m_base.vt->pfnWrite(pTft, 'D');
-				pTft->m_base.vt->pfnWrite(pTft, 'E');
-				pTft->m_base.vt->pfnWrite(pTft, 'F');
-				pTft->m_base.vt->pfnWrite(pTft, 'G');
-				pTft->m_base.vt->pfnWrite(pTft, 'H');
-				pTft->m_base.vt->pfnWrite(pTft, 'I');
-				pTft->m_base.vt->pfnWrite(pTft, 'J');
-				pTft->m_base.vt->pfnWrite(pTft, 'K');
-				pTft->m_base.vt->pfnWrite(pTft, 'L');
-				pTft->m_base.vt->pfnWrite(pTft, 'M');
-				AdafruitGfx_setCursor(pTft, 0, 40);
-				pTft->m_base.vt->pfnWrite(pTft, '0');
-				pTft->m_base.vt->pfnWrite(pTft, '1');
-				pTft->m_base.vt->pfnWrite(pTft, '2');
-				pTft->m_base.vt->pfnWrite(pTft, '3');
-				pTft->m_base.vt->pfnWrite(pTft, '4');
-				pTft->m_base.vt->pfnWrite(pTft, '5');
-				pTft->m_base.vt->pfnWrite(pTft, '6');
-				pTft->m_base.vt->pfnWrite(pTft, '7');
-				pTft->m_base.vt->pfnWrite(pTft, '8');
-				pTft->m_base.vt->pfnWrite(pTft, '9');
-				pTft->m_base.vt->pfnWrite(pTft, '-');
-				pTft->m_base.vt->pfnWrite(pTft, '+');
-				pTft->m_base.vt->pfnWrite(pTft, '[');
-				AdafruitGfx_setCursor(pTft, 0, 60);
-				pTft->m_base.vt->pfnWrite(pTft, '!');
-				pTft->m_base.vt->pfnWrite(pTft, '@');
-				pTft->m_base.vt->pfnWrite(pTft, '#');
-				pTft->m_base.vt->pfnWrite(pTft, '$');
-				pTft->m_base.vt->pfnWrite(pTft, '%');
-				pTft->m_base.vt->pfnWrite(pTft, '^');
-				pTft->m_base.vt->pfnWrite(pTft, '&');
-				pTft->m_base.vt->pfnWrite(pTft, '*');
-				pTft->m_base.vt->pfnWrite(pTft, '(');
-				pTft->m_base.vt->pfnWrite(pTft, ')');
-				pTft->m_base.vt->pfnWrite(pTft, ';');
-				pTft->m_base.vt->pfnWrite(pTft, ':');
-				pTft->m_base.vt->pfnWrite(pTft, '{');
+				pTft->m_base.vt->pfnFillScreen(pTft, TFT_BACKGROUND);
 			} else {
 				udi_cdc_write_buf("Samogon: Unknown command: ", 26);
 				udi_cdc_putc(c);
 				udi_cdc_write_buf("\n\r", 2);
 			}
+		} else {
+			delay_ms(10);
 		}
 	}
 }
@@ -286,23 +234,23 @@ void taskPidControlLoop(void *pvParameters)
 		 if (max31855ReadData(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor, &tempData)) 
 		 {
 			AdafruitGfx_setTextSize(pTft, 1);
-			Sitronix7735_Text(pTft, "sensor", 2, 2, 0xffff, 0x0, true);
+			Sitronix7735_Text(pTft, "sensor", 2, 2, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 
 			AdafruitGfx_setTextSize(pTft, 2);
 			formatFloat(tempData.Temp, strBuffer, sizeof(strBuffer), false, 0, 2);
-			Sitronix7735_Text(pTft, strBuffer, 15, 20, 0xffff, 0x0, true);
+			Sitronix7735_Text(pTft, strBuffer, 15, 20, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 
 			AdafruitGfx_setTextSize(pTft, 1);
-			Sitronix7735_Text(pTft, "room", 2, 45, 0xffff, 0x0, true);
+			Sitronix7735_Text(pTft, "room", 2, 45, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 
 			AdafruitGfx_setTextSize(pTft, 2);
 			formatFloat(tempData.InternalTemp, strBuffer, sizeof(strBuffer), false, 0, 2);
-			Sitronix7735_Text(pTft, strBuffer, 15, 63, 0xffff, 0x0, true);
+			Sitronix7735_Text(pTft, strBuffer, 15, 63, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 		}
 		else 
 		{
 			AdafruitGfx_setTextSize(pTft, 2);
-			Sitronix7735_Text(pTft, "Sensor error", 0, 0, 0xffff, 0x0, true);
+			Sitronix7735_Text(pTft, "Sensor error", 0, 0, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 		}
 	}
 }
@@ -411,6 +359,6 @@ void callbackRotaryEncoderChannelB(void)
 
 void callbackZeroCross(void)
 {
-	g_zeroCrossCount++;
+	g_appData.zeroCrossCount++;
 }
 
