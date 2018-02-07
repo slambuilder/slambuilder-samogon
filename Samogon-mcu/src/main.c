@@ -1,7 +1,6 @@
 #include "asf.h"
-#include "Max31855.h"
 #include "utils.h"
-#include "Sitronix7735.h"
+#include "UserTasks.h"
 
 // forward declarations
 void callbackRotaryEncoderChannelA(void);
@@ -9,9 +8,6 @@ void callbackRotaryEncoderChannelB(void);
 void callbackPushButton(void);
 void callbackZeroCross(void);
 void tempSampleCallback(TimerHandle_t hTimer);
-
-#define TFT_BACKGROUND ST7735_RGB(30, 60, 30)
-#define TFT_TEXT_COLOR ST7735_RGB(1, 2, 1)
 
 void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
 {
@@ -114,146 +110,8 @@ void configureTftDisplayPorts(Sitronix7735 *pTft)
 	pTft->m_base.vt->pfnFillRect(pTft, 135,115, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x0f));	// white
 }
 
-void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
-{
-	struct Max31855Data tempData;
-	if (max31855ReadData(pSpiModuleTempSensor, pSpiSlaveInstance, &tempData))
-	{
-		char tempStr[20];
-		char internalTempStr[20];
-		formatFloat(tempData.Temp, tempStr, sizeof(tempStr), false, 0, 2);
-		formatFloat(tempData.InternalTemp, internalTempStr, sizeof(internalTempStr), false, 0, 2);
-
-		char printBuf[100];
-		int len = snprintf(printBuf, sizeof(printBuf), "temp: %s, int: %s, ticks: %u\n\r", tempStr, internalTempStr, xTaskGetTickCountFromISR());
-		udi_cdc_write_buf(printBuf, len);
-	}
-	else 
-	{
-		udi_cdc_write_buf("Failure reading temp sensor. Failure code: ", 43);
-		udi_cdc_putc(tempData.FailureType + '0');
-		udi_cdc_write_buf("\n\r", 2);
-	}
-}
-
-typedef enum TControlMessageType
-{
-	PushButtonPressed,
-	RotaryEncoderChannelA,
-	RotaryEncoderChannelB,
-} ControlMessageType;
-
-typedef struct TControlMessage
-{
-	ControlMessageType type;
-	TickType_t ticks;
-} ControlMessage;
-
-typedef struct TAppData
-{
-	Sitronix7735 tft;
-	struct spi_module spiModuleTempSensor;
-	struct spi_slave_inst spiSlaveTempSensor;
-	TaskHandle_t hTaskCdcLoop;
-	TaskHandle_t hTaskControlReadLoop;
-	TaskHandle_t hTaskPidControlLoop;
-	bool bAutorizeCdcTransfer;
-	QueueHandle_t hControlQueue;
-	QueueHandle_t hTickQueue;
-	TimerHandle_t hTempSampleTimer;
-	float temperature;
-	float internalTemperature;
-	uint32_t zeroCrossCount;
-} AppData;
-
 // global instances
 AppData g_appData;
-
-void taskCdcLoop(void *pvParameters)
-{
-	while (1)
-	{
-		// Echo all input back to CDC port
-		if (g_appData.bAutorizeCdcTransfer) {
-			char c = udi_cdc_getc();
-			if (c == 't') {
-				interactiveReadTempSensor(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor);
-			} else if (c == 'z') {
-				printfToCdc("Zero cross count: %u\n\r", g_appData.zeroCrossCount);
-			} else if (c == 'f') {
-				Sitronix7735 *pTft = &g_appData.tft;
-				pTft->m_base.vt->pfnFillScreen(pTft, TFT_BACKGROUND);
-			} else {
-				udi_cdc_write_buf("Samogon: Unknown command: ", 26);
-				udi_cdc_putc(c);
-				udi_cdc_write_buf("\n\r", 2);
-			}
-		} else {
-			delay_ms(10);
-		}
-	}
-}
-
-// control reading task waits for a "Control" queue
-void taskControlReadLoop(void *pvParameters)
-{
-	ControlMessage message;
-
-	while (true)
-	{
-		xQueueReceive(g_appData.hControlQueue, &message, portMAX_DELAY);
-
-		if (message.type == PushButtonPressed) 
-		{
-			// perform additional debounce for push button
-			delay_ms(1);
-			bool pin_state = port_pin_get_input_level(CONF_BOARD_PUSH_BUTTON_EXTINT_PIN);
-			if (pin_state)
-			{
-				continue;
-			}
-		}
-
-		printfToCdc("Control message: %d, time: %u\n\r", message.type, message.ticks);
-	}
-}
-
-// control reading task waits for a "Tick" queue
-void taskPidControlLoop(void *pvParameters)
-{
-	TickType_t ticks;
-	Sitronix7735 *pTft = &g_appData.tft;
-	struct Max31855Data tempData;
-	char strBuffer[20];
-
-	while (true)
-	{
-		xQueueReceive(g_appData.hTickQueue, &ticks, portMAX_DELAY);
-
-		// sample the temperature sensor data
-		 if (max31855ReadData(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor, &tempData)) 
-		 {
-			AdafruitGfx_setTextSize(pTft, 1);
-			Sitronix7735_Text(pTft, "sensor", 2, 2, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-
-			AdafruitGfx_setTextSize(pTft, 2);
-			formatFloat(tempData.Temp, strBuffer, sizeof(strBuffer), false, 0, 2);
-			Sitronix7735_Text(pTft, strBuffer, 15, 20, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-
-			AdafruitGfx_setTextSize(pTft, 1);
-			Sitronix7735_Text(pTft, "room", 2, 45, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-
-			AdafruitGfx_setTextSize(pTft, 2);
-			formatFloat(tempData.InternalTemp, strBuffer, sizeof(strBuffer), false, 0, 2);
-			Sitronix7735_Text(pTft, strBuffer, 15, 63, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-		}
-		else 
-		{
-			AdafruitGfx_setTextSize(pTft, 2);
-			Sitronix7735_Text(pTft, "Sensor error", 0, 0, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-		}
-	}
-}
 
 int main (void)
 {
@@ -267,6 +125,11 @@ int main (void)
 	memset(&g_appData, 0, sizeof(g_appData));
 	g_appData.bAutorizeCdcTransfer = true;
 
+	if (!readNvmUserConfig(&g_appData.nvmUserConfig))
+	{
+		getDefaultNvmUserConfig(&g_appData.nvmUserConfig);
+	}
+
 	configureGpioInterrupts();
 	system_interrupt_enable_global();
 
@@ -276,6 +139,7 @@ int main (void)
 
 	g_appData.hControlQueue = xQueueCreate(10, sizeof(ControlMessage));
 	g_appData.hTickQueue = xQueueCreate(1, sizeof(TickType_t));
+	g_appData.hDisplayChangeQueue = xQueueCreate(10, sizeof(DisplayChangeMessage));
 
 	// CDC loop task has low priority, just 1 above an idle
 	xTaskCreate(taskCdcLoop, "CDC", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 1, &g_appData.hTaskCdcLoop);
@@ -284,7 +148,10 @@ int main (void)
 	xTaskCreate(taskControlReadLoop, "ControlRead", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 2, &g_appData.hTaskControlReadLoop);
 
 	// PID Control loop task has priority 3 above an idle
-	xTaskCreate(taskPidControlLoop, "PidControl", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 2, &g_appData.hTaskPidControlLoop);
+	xTaskCreate(taskPidControlLoop, "PidControl", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 3, &g_appData.hTaskPidControlLoop);
+
+	// Display loop task has priority 1 above an idle
+	xTaskCreate(taskDisplayLoop, "Display", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 1, &g_appData.hTaskDisplayLoop);
 
 	g_appData.hTempSampleTimer = xTimerCreate("TempSample", 1000, pdTRUE, NULL, tempSampleCallback);
 	xTimerStart(g_appData.hTempSampleTimer, 0);
@@ -313,8 +180,6 @@ void samogon_callback_cdc_disable(void)
 	g_appData.bAutorizeCdcTransfer = false;
 }
 
-#define DEBOUNCE_TICKS 200
-
 void queueMessageFromCallback(TickType_t *pInitialSignalTicks, ControlMessageType type)
 {
 	TickType_t currentTicks = xTaskGetTickCountFromISR();
@@ -342,19 +207,19 @@ void queueMessageFromCallback(TickType_t *pInitialSignalTicks, ControlMessageTyp
 void callbackPushButton(void)
 {
 	static TickType_t s_initialSignalTicks = 0;
-	queueMessageFromCallback(&s_initialSignalTicks, PushButtonPressed);
+	queueMessageFromCallback(&s_initialSignalTicks, CM_PushButtonPressed);
 }
 
 void callbackRotaryEncoderChannelA(void)
 {
 	static TickType_t s_initialSignalTicks = 0;
-	queueMessageFromCallback(&s_initialSignalTicks, RotaryEncoderChannelA);
+	queueMessageFromCallback(&s_initialSignalTicks, CM_RotaryEncoderChannelA);
 }
 
 void callbackRotaryEncoderChannelB(void)
 {
 	static TickType_t s_initialSignalTicks = 0;
-	queueMessageFromCallback(&s_initialSignalTicks, RotaryEncoderChannelB);
+	queueMessageFromCallback(&s_initialSignalTicks, CM_RotaryEncoderChannelB);
 }
 
 void callbackZeroCross(void)

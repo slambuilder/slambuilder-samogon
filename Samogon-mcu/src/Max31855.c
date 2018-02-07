@@ -17,7 +17,7 @@ struct Max31855Packet
 bool max31855ReadData(
 	struct spi_module *pSpiModuleTempSensor, 
 	struct spi_slave_inst *pSpiSlaveInstance, 
-	struct Max31855Data *pData)
+	Max31855Data *pData)
 {
 	// read from SPI
 	uint8_t bufferSpiRead[4];
