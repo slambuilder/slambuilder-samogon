@@ -6,6 +6,8 @@
 
 #define DELAY 0x80
 
+#define ST7735_RGB(r, g, b) ((r & 0x1f) | ((g & 0x3f) << 5) | ((b & 0x1f) << 11))
+
 typedef struct TSitronix7735
 {
 	// base has to be the first field. This will work similar to C++ inheritance.
@@ -48,6 +50,16 @@ void Sitronix7735_Initialize(
 void Sitronix7735_Reset(Sitronix7735 *_this);
 void Sitronix7735_LightOn(Sitronix7735 *_this);
 void Sitronix7735_LightOff(Sitronix7735 *_this);
+
+// returns number of characters drawn
+int Sitronix7735_Text(
+	Sitronix7735 *_this, 
+	const char *str, 
+	int16_t x, 
+	int16_t y, 
+	uint16_t color, 
+	uint16_t bgColor, 
+	bool clearBackground);
 
 // virtual methods, overrides for AdafruitGfx library
 void Sitronix7735_Destructor(Sitronix7735 *_this);

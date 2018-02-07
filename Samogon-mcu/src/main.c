@@ -3,6 +3,13 @@
 #include "utils.h"
 #include "Sitronix7735.h"
 
+// forward declarations
+void callbackRotaryEncoderChannelA(void);
+void callbackRotaryEncoderChannelB(void);
+void callbackPushButton(void);
+void callbackZeroCross(void);
+void tempSampleCallback(TimerHandle_t hTimer);
+
 void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
 {
 	struct spi_config spiConfig;
@@ -24,26 +31,7 @@ void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_
 	spi_enable(pSpiModuleTempSensor);
 }
 
-void callbackPushButton(void)
-{
-	//bool pin_state = port_pin_get_input_level(BUTTON_0_PIN);
-	//port_pin_set_output_level(LED_0_PIN, pin_state);
-}
-
-void callbackRotaryEncoderChannelA(void)
-{
-}
-
-void callbackRotaryEncoderChannelB(void)
-{
-}
-
 uint32_t g_zeroCrossCount = 0;
-
-void callbackZeroCross(void)
-{
-	g_zeroCrossCount++;
-}
 
 void configureInterruptForPin(
 	const uint32_t gpioPin, 
@@ -92,18 +80,6 @@ void configureGpioInterrupts(void)
 
 void configureTftDisplayPorts(Sitronix7735 *pTft)
 {
-// Color definitions
-#define	ST7735_BLACK   0x0000
-#define	ST7735_BLUE    0x001F
-#define	ST7735_RED     0xF800
-#define	ST7735_GREEN   0x07E0
-#define ST7735_CYAN    0x07FF
-#define ST7735_MAGENTA 0xF81F
-#define ST7735_YELLOW  0xFFE0
-#define ST7735_WHITE   0xFFFF
-
-#define ST7735_RGB(r, g, b) ((r & 0x1f) | ((g & 0x3f) << 5) | ((b & 0x1f) << 11))
-
 	Sitronix7735_Constructor(pTft, 128, 160);
 	Sitronix7735_Initialize(pTft, 
 		CONF_BOARD_TFT_SERCOM_MUX_SETTING,
@@ -119,25 +95,21 @@ void configureTftDisplayPorts(Sitronix7735 *pTft)
 		CONF_BOARD_TFT_DC_SELECT_OUT_PIN, 
 		CONF_BOARD_TFT_RST_OUT_PIN);
 
-	Sitronix7735_fillRect(pTft,  0,  0, 128, 160, ST7735_RGB(20, 40, 30));
+	pTft->m_base.vt->pfnSetRotation(pTft, 3);
+	pTft->m_base.vt->pfnFillScreen(pTft,  ST7735_RGB(20, 40, 30));
 
-	Sitronix7735_fillRect(pTft,  5,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
-	Sitronix7735_fillRect(pTft, 15, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x1f));	// blue
-	Sitronix7735_fillRect(pTft,  5, 25, 10, 10, ST7735_RGB(0x1f, 0x00, 0x00));	// red
-	Sitronix7735_fillRect(pTft, 15, 35, 10, 10, ST7735_RGB(0x00, 0x3f, 0x00));	// green
-	Sitronix7735_fillRect(pTft,  5, 45, 10, 10, ST7735_RGB(0x00, 0x3f, 0x1f));	// cyan
-	Sitronix7735_fillRect(pTft, 15, 55, 10, 10, ST7735_RGB(0x1f, 0x00, 0x1f));	// magenta
-	Sitronix7735_fillRect(pTft,  5, 65, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x00));	// yellow
-	Sitronix7735_fillRect(pTft, 15, 75, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x1f));	// white
-
-	Sitronix7735_fillRect(pTft, 55,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
-	Sitronix7735_fillRect(pTft, 65, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x0f));	// blue
-	Sitronix7735_fillRect(pTft, 55, 25, 10, 10, ST7735_RGB(0x0f, 0x00, 0x00));	// red
-	Sitronix7735_fillRect(pTft, 65, 35, 10, 10, ST7735_RGB(0x00, 0x1f, 0x00));	// green
-	Sitronix7735_fillRect(pTft, 55, 45, 10, 10, ST7735_RGB(0x00, 0x1f, 0x0f));	// cyan
-	Sitronix7735_fillRect(pTft, 65, 55, 10, 10, ST7735_RGB(0x0f, 0x00, 0x0f));	// magenta
-	Sitronix7735_fillRect(pTft, 55, 65, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x00));	// yellow
-	Sitronix7735_fillRect(pTft, 65, 75, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x0f));	// white
+	pTft->m_base.vt->pfnFillRect(pTft, 145,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
+	pTft->m_base.vt->pfnFillRect(pTft, 135, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x1f));	// blue
+	pTft->m_base.vt->pfnFillRect(pTft, 145, 25, 10, 10, ST7735_RGB(0x1f, 0x00, 0x00));	// red
+	pTft->m_base.vt->pfnFillRect(pTft, 135, 35, 10, 10, ST7735_RGB(0x00, 0x3f, 0x00));	// green
+	pTft->m_base.vt->pfnFillRect(pTft, 145, 45, 10, 10, ST7735_RGB(0x00, 0x3f, 0x1f));	// cyan
+	pTft->m_base.vt->pfnFillRect(pTft, 135, 55, 10, 10, ST7735_RGB(0x1f, 0x00, 0x1f));	// magenta
+	pTft->m_base.vt->pfnFillRect(pTft, 145, 65, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x00));	// yellow
+	pTft->m_base.vt->pfnFillRect(pTft, 135, 75, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x1f));	// white
+	pTft->m_base.vt->pfnFillRect(pTft, 145, 85, 10, 10, ST7735_RGB(0x00, 0x1f, 0x0f));	// cyan
+	pTft->m_base.vt->pfnFillRect(pTft, 135, 95, 10, 10, ST7735_RGB(0x0f, 0x00, 0x0f));	// magenta
+	pTft->m_base.vt->pfnFillRect(pTft, 145,105, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x00));	// yellow
+	pTft->m_base.vt->pfnFillRect(pTft, 135,115, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x0f));	// white
 }
 
 void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
@@ -162,33 +134,52 @@ void interactiveReadTempSensor(struct spi_module *pSpiModuleTempSensor, struct s
 	}
 }
 
+typedef enum TControlMessageType
+{
+	PushButtonPressed,
+	RotaryEncoderChannelA,
+	RotaryEncoderChannelB,
+} ControlMessageType;
+
+typedef struct TControlMessage
+{
+	ControlMessageType type;
+	TickType_t ticks;
+} ControlMessage;
+
 typedef struct TAppData
 {
 	Sitronix7735 tft;
 	struct spi_module spiModuleTempSensor;
-	struct spi_slave_inst spiSlaveInstance;
+	struct spi_slave_inst spiSlaveTempSensor;
 	TaskHandle_t hTaskCdcLoop;
+	TaskHandle_t hTaskControlReadLoop;
+	TaskHandle_t hTaskPidControlLoop;
+	bool bAutorizeCdcTransfer;
+	QueueHandle_t hControlQueue;
+	QueueHandle_t hTickQueue;
+	TimerHandle_t hTempSampleTimer;
+	float temperature;
+	float internalTemperature;
 } AppData;
 
-bool g_flag_autorize_cdc_transfer = true;
+// global instances
+AppData g_appData;
 
 void taskCdcLoop(void *pvParameters)
 {
-	AppData *pAppData = (AppData*)pvParameters;
-
 	while (1)
 	{
 		// Echo all input back to CDC port
-		if (g_flag_autorize_cdc_transfer) {
+		if (g_appData.bAutorizeCdcTransfer) {
 			char c = udi_cdc_getc();
 			if (c == 't') {
-				interactiveReadTempSensor(&pAppData->spiModuleTempSensor, &pAppData->spiSlaveInstance);
+				interactiveReadTempSensor(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor);
 			} else if (c == 'z') {
 				printfToCdc("Zero cross count: %u\n\r", g_zeroCrossCount);
 			} else if (c == 'f') {
-				Sitronix7735 *pTft = &pAppData->tft;
+				Sitronix7735 *pTft = &g_appData.tft;
 				pTft->m_base.vt->pfnFillScreen(pTft, ST7735_RGB(5, 10, 5));
-				pTft->m_base.vt->pfnSetRotation(pTft, 3);
 				AdafruitGfx_setTextSize(pTft, 2);
 				AdafruitGfx_setCursor(pTft, 0, 0);
 				pTft->m_base.vt->pfnWrite(pTft, 'a');
@@ -255,6 +246,67 @@ void taskCdcLoop(void *pvParameters)
 	}
 }
 
+// control reading task waits for a "Control" queue
+void taskControlReadLoop(void *pvParameters)
+{
+	ControlMessage message;
+
+	while (true)
+	{
+		xQueueReceive(g_appData.hControlQueue, &message, portMAX_DELAY);
+
+		if (message.type == PushButtonPressed) 
+		{
+			// perform additional debounce for push button
+			delay_ms(1);
+			bool pin_state = port_pin_get_input_level(CONF_BOARD_PUSH_BUTTON_EXTINT_PIN);
+			if (pin_state)
+			{
+				continue;
+			}
+		}
+
+		printfToCdc("Control message: %d, time: %u\n\r", message.type, message.ticks);
+	}
+}
+
+// control reading task waits for a "Tick" queue
+void taskPidControlLoop(void *pvParameters)
+{
+	TickType_t ticks;
+	Sitronix7735 *pTft = &g_appData.tft;
+	struct Max31855Data tempData;
+	char strBuffer[20];
+
+	while (true)
+	{
+		xQueueReceive(g_appData.hTickQueue, &ticks, portMAX_DELAY);
+
+		// sample the temperature sensor data
+		 if (max31855ReadData(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor, &tempData)) 
+		 {
+			AdafruitGfx_setTextSize(pTft, 1);
+			Sitronix7735_Text(pTft, "sensor", 2, 2, 0xffff, 0x0, true);
+
+			AdafruitGfx_setTextSize(pTft, 2);
+			formatFloat(tempData.Temp, strBuffer, sizeof(strBuffer), false, 0, 2);
+			Sitronix7735_Text(pTft, strBuffer, 15, 20, 0xffff, 0x0, true);
+
+			AdafruitGfx_setTextSize(pTft, 1);
+			Sitronix7735_Text(pTft, "room", 2, 45, 0xffff, 0x0, true);
+
+			AdafruitGfx_setTextSize(pTft, 2);
+			formatFloat(tempData.InternalTemp, strBuffer, sizeof(strBuffer), false, 0, 2);
+			Sitronix7735_Text(pTft, strBuffer, 15, 63, 0xffff, 0x0, true);
+		}
+		else 
+		{
+			AdafruitGfx_setTextSize(pTft, 2);
+			Sitronix7735_Text(pTft, "Sensor error", 0, 0, 0xffff, 0x0, true);
+		}
+	}
+}
+
 int main (void)
 {
 	system_init();
@@ -264,31 +316,101 @@ int main (void)
 	udc_start();
 	delay_init();
 
+	memset(&g_appData, 0, sizeof(g_appData));
+	g_appData.bAutorizeCdcTransfer = true;
+
 	configureGpioInterrupts();
 	system_interrupt_enable_global();
 
-	AppData appData;
+	configureTftDisplayPorts(&g_appData.tft);
 
-	configureTftDisplayPorts(&appData.tft);
+	configureSpiTempSensor(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor);
 
-	configureSpiTempSensor(&appData.spiModuleTempSensor, &appData.spiSlaveInstance);
-
-	// Create tasks before starting the kernel.
+	g_appData.hControlQueue = xQueueCreate(10, sizeof(ControlMessage));
+	g_appData.hTickQueue = xQueueCreate(1, sizeof(TickType_t));
 
 	// CDC loop task has low priority, just 1 above an idle
-	xTaskCreate(taskCdcLoop, "NAME", configMINIMAL_STACK_SIZE * 5, &appData, tskIDLE_PRIORITY + 1, &appData.hTaskCdcLoop);
+	xTaskCreate(taskCdcLoop, "CDC", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 1, &g_appData.hTaskCdcLoop);
+
+	// Control loop task has priority 2 above an idle
+	xTaskCreate(taskControlReadLoop, "ControlRead", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 2, &g_appData.hTaskControlReadLoop);
+
+	// PID Control loop task has priority 3 above an idle
+	xTaskCreate(taskPidControlLoop, "PidControl", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 2, &g_appData.hTaskPidControlLoop);
+
+	g_appData.hTempSampleTimer = xTimerCreate("TempSample", 1000, pdTRUE, NULL, tempSampleCallback);
+	xTimerStart(g_appData.hTempSampleTimer, 0);
 
 	// Start the scheduler. Normally, this function never returns.
 	vTaskStartScheduler();
 }
 
+// This is a timer callback function.
+// It should never block. 
+// Current implementation only sends a message in a queue using non-blocking call.
+void tempSampleCallback(TimerHandle_t hTimer)
+{
+	TickType_t currentTicks = xTaskGetTickCount();
+	xQueueSendToBack(g_appData.hTickQueue, &currentTicks, 0);
+}
+
 bool samogon_callback_cdc_enable(void)
 {
-	g_flag_autorize_cdc_transfer = true;
+	g_appData.bAutorizeCdcTransfer = true;
 	return true;
 }
 
 void samogon_callback_cdc_disable(void)
 {
-	g_flag_autorize_cdc_transfer = false;
+	g_appData.bAutorizeCdcTransfer = false;
 }
+
+#define DEBOUNCE_TICKS 200
+
+void queueMessageFromCallback(TickType_t *pInitialSignalTicks, ControlMessageType type)
+{
+	TickType_t currentTicks = xTaskGetTickCountFromISR();
+
+	// check for ticks overflow
+	if (currentTicks < *pInitialSignalTicks) 
+	{
+		// reset initial ticks back to 0 when current ticks are overflown
+		*pInitialSignalTicks = 0;
+	}
+
+	// debounce logic: only signal once within DEBOUNCE_TICKS interval
+	if (currentTicks - *pInitialSignalTicks > DEBOUNCE_TICKS) 
+	{
+		*pInitialSignalTicks = currentTicks;
+
+		ControlMessage message = {
+			type: type,
+			ticks: currentTicks
+		};
+		xQueueSendToBackFromISR(g_appData.hControlQueue, &message, NULL);
+	}
+}
+
+void callbackPushButton(void)
+{
+	static TickType_t s_initialSignalTicks = 0;
+	queueMessageFromCallback(&s_initialSignalTicks, PushButtonPressed);
+}
+
+void callbackRotaryEncoderChannelA(void)
+{
+	static TickType_t s_initialSignalTicks = 0;
+	queueMessageFromCallback(&s_initialSignalTicks, RotaryEncoderChannelA);
+}
+
+void callbackRotaryEncoderChannelB(void)
+{
+	static TickType_t s_initialSignalTicks = 0;
+	queueMessageFromCallback(&s_initialSignalTicks, RotaryEncoderChannelB);
+}
+
+void callbackZeroCross(void)
+{
+	g_zeroCrossCount++;
+}
+

@@ -283,28 +283,6 @@ void Sitronix7735_Initialize(
 	spi_enable(&_this->spiModule);
 
 	Sitronix7735_Reset(_this);
-
-#define ST7735_RGB(r, g, b) ((r & 0x1f) | ((g & 0x3f) << 5) | ((b & 0x1f) << 11))
-
-	Sitronix7735_fillRect(_this,  0,  0, 128, 160, ST7735_RGB(10, 30, 15));
-
-	Sitronix7735_fillRect(_this,  5,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
-	Sitronix7735_fillRect(_this, 15, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x1f));	// blue
-	Sitronix7735_fillRect(_this,  5, 25, 10, 10, ST7735_RGB(0x1f, 0x00, 0x00));	// red
-	Sitronix7735_fillRect(_this, 15, 35, 10, 10, ST7735_RGB(0x00, 0x3f, 0x00));	// green
-	Sitronix7735_fillRect(_this,  5, 45, 10, 10, ST7735_RGB(0x00, 0x3f, 0x1f));	// cyan
-	Sitronix7735_fillRect(_this, 15, 55, 10, 10, ST7735_RGB(0x1f, 0x00, 0x1f));	// magenta
-	Sitronix7735_fillRect(_this,  5, 65, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x00));	// yellow
-	Sitronix7735_fillRect(_this, 15, 75, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x1f));	// white
-
-	Sitronix7735_fillRect(_this, 55,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
-	Sitronix7735_fillRect(_this, 65, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x0f));	// blue
-	Sitronix7735_fillRect(_this, 55, 25, 10, 10, ST7735_RGB(0x0f, 0x00, 0x00));	// red
-	Sitronix7735_fillRect(_this, 65, 35, 10, 10, ST7735_RGB(0x00, 0x1f, 0x00));	// green
-	Sitronix7735_fillRect(_this, 55, 45, 10, 10, ST7735_RGB(0x00, 0x1f, 0x0f));	// cyan
-	Sitronix7735_fillRect(_this, 65, 55, 10, 10, ST7735_RGB(0x0f, 0x00, 0x0f));	// magenta
-	Sitronix7735_fillRect(_this, 55, 65, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x00));	// yellow
-	Sitronix7735_fillRect(_this, 65, 75, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x0f));	// white
 }
 
 void Sitronix7735_Reset(Sitronix7735 *_this)
@@ -449,4 +427,29 @@ void Sitronix7735_invertDisplay(Sitronix7735 *_this, bool i)
 		i ? ST7735_INVON : ST7735_INVOFF, 0,	// Memory data read/write direction command, no parameters
 	};
 	Sitronix7735_writeCommands(_this, buff, sizeof(buff));
+}
+
+int Sitronix7735_Text(
+	Sitronix7735 *_this, 
+	const char *str, 
+	int16_t x, 
+	int16_t y, 
+	uint16_t color, 
+	uint16_t bgColor, 
+	bool clearBackground)
+{
+	if (clearBackground)
+	{
+		AdafruitGfx_setTextColorWithBg(_this, color, bgColor);
+	}
+	else 
+	{
+		AdafruitGfx_setTextColor(_this, color);
+	}
+
+	AdafruitGfx_setCursor(_this, x, y);
+	while (*str)
+	{
+		_this->m_base.vt->pfnWrite(_this, *str++);
+	}
 }
