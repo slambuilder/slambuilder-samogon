@@ -32,15 +32,18 @@ typedef enum TDisplayChangeMessageType
 typedef struct TDisplayChangeMessage
 {
 	DisplayChangeMessageType type;
-	float temperature;
-	float internalTemperature;
+	float temperature1;
+	float internalTemperature1;
+	float temperature2;
+	float internalTemperature2;
 } DisplayChangeMessage;
 
 typedef struct TAppData
 {
 	Sitronix7735 tft;
 	struct spi_module spiModuleTempSensor;
-	struct spi_slave_inst spiSlaveTempSensor;
+	struct spi_slave_inst spiSlaveTempSensor1;
+	struct spi_slave_inst spiSlaveTempSensor2;
 	TaskHandle_t hTaskCdcLoop;
 	TaskHandle_t hTaskControlReadLoop;
 	TaskHandle_t hTaskPidControlLoop;

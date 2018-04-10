@@ -8,8 +8,11 @@ char intToHex(uint8_t i)
 	return (i < 10) ? (char)(i + '0') : (char)(i - 10 + 'A');
 }
 
+bool g_enableDebugPrintToCdc = false;
+
 void printBinaryDataToCdc(uint8_t *pBuffer, int size)
 {
+	if (!g_enableDebugPrintToCdc) return;
 	char ach[3];
 	ach[2] = ' ';
 	for (int i = 0; i < size; i++) {
@@ -21,6 +24,7 @@ void printBinaryDataToCdc(uint8_t *pBuffer, int size)
 
 void printfToCdc(const char *format, ...)
 {
+	if (!g_enableDebugPrintToCdc) return;
 	char buffer[100];
 	va_list vl;
 	va_start(vl, format);
@@ -117,5 +121,16 @@ bool formatFloat(float f, char *pBuffer, int bufferSize, bool forceSign, int dig
 	// null terminate the string
 	pBuffer[index++] = 0;
 
+	return true;
+}
+
+bool appendString(char *pBuffer, int bufferSize, const char *pAppend)
+{
+	int len = strlen(pBuffer);
+	if (len + strlen(pAppend) >= bufferSize) 
+	{
+		return false;
+	}
+	strcpy(pBuffer + len, pAppend);
 	return true;
 }

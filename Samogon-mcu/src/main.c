@@ -9,15 +9,25 @@ void callbackPushButton(void);
 void callbackZeroCross(void);
 void tempSampleCallback(TimerHandle_t hTimer);
 
-void configureSpiTempSensor(struct spi_module *pSpiModuleTempSensor, struct spi_slave_inst *pSpiSlaveInstance)
+void configureSpiTempSensor(
+	struct spi_module *pSpiModuleTempSensor, 
+	struct spi_slave_inst *pSpiSlaveInstance1,
+	struct spi_slave_inst *pSpiSlaveInstance2)
 {
 	struct spi_config spiConfig;
 	struct spi_slave_inst_config slaveConfig;
 
-	// Configure and initialize software device instance of peripheral slave
+	// Configure and initialize software device instance of peripheral slave 
+
+	// first sensor
 	spi_slave_inst_get_config_defaults(&slaveConfig);
-	slaveConfig.ss_pin = CONF_BOARD_MAX31855_SS_OUT_PIN;
-	spi_attach_slave(pSpiSlaveInstance, &slaveConfig);
+	slaveConfig.ss_pin = CONF_BOARD_MAX31855_SENSOR1_SS_OUT_PIN;
+	spi_attach_slave(pSpiSlaveInstance1, &slaveConfig);
+
+	// second sensor
+	spi_slave_inst_get_config_defaults(&slaveConfig);
+	slaveConfig.ss_pin = CONF_BOARD_MAX31855_SENSOR2_SS_OUT_PIN;
+	spi_attach_slave(pSpiSlaveInstance2, &slaveConfig);
 
 	// Configure, initialize and enable SERCOM SPI module
 	spi_get_config_defaults(&spiConfig);
@@ -96,18 +106,18 @@ void configureTftDisplayPorts(Sitronix7735 *pTft)
 	pTft->m_base.vt->pfnFillScreen(pTft, TFT_BACKGROUND);
 	AdafruitGfx_setTextColorWithBg(pTft, TFT_TEXT_COLOR, TFT_BACKGROUND);
 
-	pTft->m_base.vt->pfnFillRect(pTft, 145,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
-	pTft->m_base.vt->pfnFillRect(pTft, 135, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x1f));	// blue
-	pTft->m_base.vt->pfnFillRect(pTft, 145, 25, 10, 10, ST7735_RGB(0x1f, 0x00, 0x00));	// red
-	pTft->m_base.vt->pfnFillRect(pTft, 135, 35, 10, 10, ST7735_RGB(0x00, 0x3f, 0x00));	// green
-	pTft->m_base.vt->pfnFillRect(pTft, 145, 45, 10, 10, ST7735_RGB(0x00, 0x3f, 0x1f));	// cyan
-	pTft->m_base.vt->pfnFillRect(pTft, 135, 55, 10, 10, ST7735_RGB(0x1f, 0x00, 0x1f));	// magenta
-	pTft->m_base.vt->pfnFillRect(pTft, 145, 65, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x00));	// yellow
-	pTft->m_base.vt->pfnFillRect(pTft, 135, 75, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x1f));	// white
-	pTft->m_base.vt->pfnFillRect(pTft, 145, 85, 10, 10, ST7735_RGB(0x00, 0x1f, 0x0f));	// cyan
-	pTft->m_base.vt->pfnFillRect(pTft, 135, 95, 10, 10, ST7735_RGB(0x0f, 0x00, 0x0f));	// magenta
-	pTft->m_base.vt->pfnFillRect(pTft, 145,105, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x00));	// yellow
-	pTft->m_base.vt->pfnFillRect(pTft, 135,115, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x0f));	// white
+	//pTft->m_base.vt->pfnFillRect(pTft, 145,  5, 10, 10, ST7735_RGB(0x00, 0x00, 0x00));	// black
+	//pTft->m_base.vt->pfnFillRect(pTft, 135, 15, 10, 10, ST7735_RGB(0x00, 0x00, 0x1f));	// blue
+	//pTft->m_base.vt->pfnFillRect(pTft, 145, 25, 10, 10, ST7735_RGB(0x1f, 0x00, 0x00));	// red
+	//pTft->m_base.vt->pfnFillRect(pTft, 135, 35, 10, 10, ST7735_RGB(0x00, 0x3f, 0x00));	// green
+	//pTft->m_base.vt->pfnFillRect(pTft, 145, 45, 10, 10, ST7735_RGB(0x00, 0x3f, 0x1f));	// cyan
+	//pTft->m_base.vt->pfnFillRect(pTft, 135, 55, 10, 10, ST7735_RGB(0x1f, 0x00, 0x1f));	// magenta
+	//pTft->m_base.vt->pfnFillRect(pTft, 145, 65, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x00));	// yellow
+	//pTft->m_base.vt->pfnFillRect(pTft, 135, 75, 10, 10, ST7735_RGB(0x1f, 0x3f, 0x1f));	// white
+	//pTft->m_base.vt->pfnFillRect(pTft, 145, 85, 10, 10, ST7735_RGB(0x00, 0x1f, 0x0f));	// cyan
+	//pTft->m_base.vt->pfnFillRect(pTft, 135, 95, 10, 10, ST7735_RGB(0x0f, 0x00, 0x0f));	// magenta
+	//pTft->m_base.vt->pfnFillRect(pTft, 145,105, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x00));	// yellow
+	//pTft->m_base.vt->pfnFillRect(pTft, 135,115, 10, 10, ST7735_RGB(0x0f, 0x1f, 0x0f));	// white
 }
 
 // global instances
@@ -135,7 +145,10 @@ int main (void)
 
 	configureTftDisplayPorts(&g_appData.tft);
 
-	configureSpiTempSensor(&g_appData.spiModuleTempSensor, &g_appData.spiSlaveTempSensor);
+	configureSpiTempSensor(
+		&g_appData.spiModuleTempSensor, 
+		&g_appData.spiSlaveTempSensor1,
+		&g_appData.spiSlaveTempSensor2);
 
 	g_appData.hControlQueue = xQueueCreate(10, sizeof(ControlMessage));
 	g_appData.hTickQueue = xQueueCreate(1, sizeof(TickType_t));

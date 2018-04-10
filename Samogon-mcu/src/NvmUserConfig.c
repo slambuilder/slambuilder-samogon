@@ -9,7 +9,7 @@
 	memset(pNvmConfig, 0, sizeof(NvmUserConfig));
 	pNvmConfig->magic = 'SMGN';
 	pNvmConfig->celsius = 1;
-	pNvmConfig->targetTemperature = 90.0;
+	pNvmConfig->power = 90.0;
  }
  
  bool writeNvmUserConfig(NvmUserConfig *pNvmConfig)
