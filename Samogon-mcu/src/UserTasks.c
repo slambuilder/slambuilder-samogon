@@ -48,13 +48,24 @@ void taskCdcLoop(void *pvParameters)
 }
 
 // control reading task waits for a "Control" queue
-void taskControlReadLoop(void *pvParameters)
+void taskControlProcessLoop(void *pvParameters)
 {
 	ControlMessage message;
 	DisplayChangeMessage dcMessage;
 	BaseType_t ret;
 	TickType_t lastTimeChannelA = 0;
 	TickType_t lastTimeChannelB = 0;
+	bool powerOn = false;
+	uint32_t powerLevel = g_appData.nvmUserConfig.power;
+
+	// send initial message to turn off power output and display power level
+	dcMessage.type = DCM_PowerOutputChanged;
+	dcMessage.powerOn = powerOn;
+	xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
+	dcMessage.type = DCM_PowerLevelChanged;
+	dcMessage.powerLevelPercent = powerLevel;
+	xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
+	// TODO
 
 	while (true)
 	{
@@ -74,52 +85,56 @@ void taskControlReadLoop(void *pvParameters)
 				continue;
 			}
 
-			dcMessage.type = DCM_PushButtonPressed;
+			powerOn = !powerOn;
+			dcMessage.type = DCM_PowerOutputChanged;
+			dcMessage.powerOn = powerOn;
 			xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
+
+			// send message to output control task
+			// TODO
 		}
-		else if (message.type == CM_RotaryEncoderChannelA)
+		else if (message.type == CM_RotaryEncoderChannelA || message.type == CM_RotaryEncoderChannelB)
 		{
-			if (lastTimeChannelB == 0) 
+			bool isChannelA = message.type == CM_RotaryEncoderChannelA;
+			bool isChannelB = message.type == CM_RotaryEncoderChannelB;
+			if (isChannelA && lastTimeChannelB == 0) 
 			{
 				lastTimeChannelA = message.ticks;
 			}
-			else if (message.ticks - lastTimeChannelB < (DEBOUNCE_TICKS * 1) )
+			else if (isChannelB && lastTimeChannelA == 0)
 			{
-				dcMessage.type = DCM_RotaryEncoderCCW;
-				xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
+				lastTimeChannelB = message.ticks;
+			}
+			else if ((isChannelA && message.ticks - lastTimeChannelB < (DEBOUNCE_TICKS * 1)) ||
+					 (isChannelB && message.ticks - lastTimeChannelA < (DEBOUNCE_TICKS * 1)))
+			{
+				powerLevel += isChannelA ? -5 : 5;
+				clampUInt32(&powerLevel, 5, 100);
+				if (powerLevel != g_appData.nvmUserConfig.power)
+				{
+					g_appData.nvmUserConfig.power = powerLevel;
+					writeNvmUserConfig(&g_appData.nvmUserConfig);
+					dcMessage.type = DCM_PowerLevelChanged;
+					dcMessage.powerLevelPercent = powerLevel;
+					xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
+					// send message to output control task
+					// TODO
+				}
+
 				lastTimeChannelA = 0;
 				lastTimeChannelB = 0;
 			}
 			else 
 			{
-				lastTimeChannelB = 0;
-				lastTimeChannelA = message.ticks;
-			}
-		}
-		else if (message.type == CM_RotaryEncoderChannelB)
-		{
-			if (lastTimeChannelA == 0)
-			{
-				lastTimeChannelB = message.ticks;
-			}
-			else if (message.ticks - lastTimeChannelA < (DEBOUNCE_TICKS * 1) )
-			{
-				dcMessage.type = DCM_RotaryEncoderCW;
-				xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
-				lastTimeChannelA = 0;
-				lastTimeChannelB = 0;
-			}
-			else
-			{
-				lastTimeChannelA = 0;
-				lastTimeChannelB = message.ticks;
+				lastTimeChannelB = isChannelA ? 0 : message.ticks;
+				lastTimeChannelA = isChannelB ? 0 : message.ticks;
 			}
 		}
 	}
 }
 
 // control reading task waits for a "Tick" queue
-void taskPidControlLoop(void *pvParameters)
+void taskPullSensorDataLoop(void *pvParameters)
 {
 	TickType_t ticks;
 	Max31855Data tempData1, tempData2;
@@ -192,17 +207,12 @@ void taskDisplayLoop(void *pvParameters)
 	BaseType_t ret;
 	char strBuffer[20];
 	bool sensorError = false;
-	bool powerOn = false;
+	bool powerOn;
 
 	AdafruitGfx_setTextSize(pTft, 1);
 	Sitronix7735_Text(pTft, "power   ", TFT_X_LABEL,   TFT_Y_POWER_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 	Sitronix7735_Text(pTft, "sensor 1", TFT_X_LABEL, TFT_Y_SENSOR1_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 	Sitronix7735_Text(pTft, "sensor 2", TFT_X_LABEL, TFT_Y_SENSOR2_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-
-	AdafruitGfx_setTextSize(pTft, 2);
-	formatFloat(g_appData.nvmUserConfig.power, strBuffer, sizeof(strBuffer), false, 0, 0);
-	appendString(strBuffer, sizeof(strBuffer), "%  ");
-	Sitronix7735_Text(pTft, strBuffer, TFT_X_VALUE, TFT_Y_POWER_VALUE, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 
 	while (true)
 	{
@@ -214,8 +224,8 @@ void taskDisplayLoop(void *pvParameters)
 
 		switch(message.type)
 		{
-			case DCM_PushButtonPressed:
-				powerOn = !powerOn;
+			case DCM_PowerOutputChanged:
+				powerOn = message.powerOn;
 				{
 					AdafruitGfx_setTextSize(pTft, 4);
 					Sitronix7735_drawFastHLine(pTft, TFT_POWER_X1, TFT_POWER_Y1, TFT_POWER_X2 - TFT_POWER_X1 + 1, TFT_POWER_BORDER_COLOR);
@@ -236,34 +246,18 @@ void taskDisplayLoop(void *pvParameters)
 						powerOn ? TFT_POWER_ACTIVE_COLOR : TFT_POWER_PASSIVE_COLOR, 
 						true);
 				}
-				printfToCdc("Display loop: DC_PushButtonPressed\n\r");
+				printfToCdc("Display loop: DCM_PowerOutputSet\n\r");
 				break;
-			case DCM_RotaryEncoderCW:
-				printfToCdc("Display loop: DC_RotaryEncoderCW\n\r");
-				g_appData.nvmUserConfig.power += 5.0;
-				if (g_appData.nvmUserConfig.power > 100.0) 
-				{
-					g_appData.nvmUserConfig.power = 100.0;
-				}
-				writeNvmUserConfig(&g_appData.nvmUserConfig);
+			case DCM_PowerLevelChanged:
+				printfToCdc("Display loop: DCM_PowerLevelSet\n\r");
 
 				AdafruitGfx_setTextSize(pTft, 2);
-				formatFloat(g_appData.nvmUserConfig.power, strBuffer, sizeof(strBuffer), false, 0, 0);
-				appendString(strBuffer, sizeof(strBuffer), "%  ");
-				Sitronix7735_Text(pTft, strBuffer, TFT_X_VALUE, TFT_Y_POWER_VALUE, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-				break;
-			case DCM_RotaryEncoderCCW:
-				printfToCdc("Display loop: DC_RotaryEncoderCCW\n\r");
-				g_appData.nvmUserConfig.power -= 5.0;
-				if (g_appData.nvmUserConfig.power < 5.0)
+				formatFloat(message.powerLevelPercent, strBuffer, sizeof(strBuffer), false, 0, 0);
+				appendString(strBuffer, sizeof(strBuffer), "%");
+				while (strlen(strBuffer) < 4)
 				{
-					g_appData.nvmUserConfig.power = 5.0;
+					appendString(strBuffer, sizeof(strBuffer), " ");
 				}
-				writeNvmUserConfig(&g_appData.nvmUserConfig);
-
-				AdafruitGfx_setTextSize(pTft, 2);
-				formatFloat(g_appData.nvmUserConfig.power, strBuffer, sizeof(strBuffer), false, 0, 0);
-				appendString(strBuffer, sizeof(strBuffer), "%  ");
 				Sitronix7735_Text(pTft, strBuffer, TFT_X_VALUE, TFT_Y_POWER_VALUE, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 				break;
 			case DCM_SensorDataChanged:

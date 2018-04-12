@@ -134,3 +134,15 @@ bool appendString(char *pBuffer, int bufferSize, const char *pAppend)
 	strcpy(pBuffer + len, pAppend);
 	return true;
 }
+
+void clampUInt32(uint32_t *pInt, uint32_t minInt, uint32_t maxInt)
+{
+	if (*pInt < minInt)
+	{
+		*pInt = minInt;
+	}
+	if (*pInt > maxInt)
+	{
+		*pInt = maxInt;
+	}
+}

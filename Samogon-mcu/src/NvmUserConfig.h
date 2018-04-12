@@ -6,7 +6,7 @@
 typedef struct TNvmUserConfig
 {
 	uint32_t magic;				// Should be a magic symbol 'SMGN'
-	float power;	// the target temperature last set by the user
+	uint32_t power;				// the last power level set by the user, percent
 	uint32_t celsius;			// User display: 1 for Celsius, 0 for Fahrenheit
 	uint32_t reserved[12];		// filler to ensure the sizeof(NvmUserConfig) == FLASH_USER_PAGE_SIZE
 	uint32_t crc32;				// Always keep crc32 field at the very end of the structure

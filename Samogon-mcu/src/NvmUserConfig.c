@@ -3,13 +3,14 @@
 #include "NvmUserConfig.h"
 
 #define CONFIG_PHYSICAL_ADDRESS (FLASH_ADDR + FLASH_SIZE - NVMCTRL_ROW_SIZE)
+#define CONFIG_DEFAULT_POWER_LEVEL 50
 
  void getDefaultNvmUserConfig(NvmUserConfig *pNvmConfig)
  {
 	memset(pNvmConfig, 0, sizeof(NvmUserConfig));
 	pNvmConfig->magic = 'SMGN';
 	pNvmConfig->celsius = 1;
-	pNvmConfig->power = 90.0;
+	pNvmConfig->power = CONFIG_DEFAULT_POWER_LEVEL;
  }
  
  bool writeNvmUserConfig(NvmUserConfig *pNvmConfig)

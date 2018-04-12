@@ -22,9 +22,8 @@ typedef struct TControlMessage
 typedef enum TDisplayChangeMessageType
 {
 	DCM_Unknown,
-	DCM_RotaryEncoderCW,
-	DCM_RotaryEncoderCCW,
-	DCM_PushButtonPressed,
+	DCM_PowerLevelChanged,
+	DCM_PowerOutputChanged,
 	DCM_SensorDataChanged,
 	DCM_SensorError,
 } DisplayChangeMessageType;
@@ -32,6 +31,8 @@ typedef enum TDisplayChangeMessageType
 typedef struct TDisplayChangeMessage
 {
 	DisplayChangeMessageType type;
+	bool powerOn;
+	int powerLevelPercent;
 	float temperature1;
 	float internalTemperature1;
 	float temperature2;
@@ -45,8 +46,8 @@ typedef struct TAppData
 	struct spi_slave_inst spiSlaveTempSensor1;
 	struct spi_slave_inst spiSlaveTempSensor2;
 	TaskHandle_t hTaskCdcLoop;
-	TaskHandle_t hTaskControlReadLoop;
-	TaskHandle_t hTaskPidControlLoop;
+	TaskHandle_t hTaskControlProcessLoop;
+	TaskHandle_t hTaskPullSensorDataLoop;
 	TaskHandle_t hTaskDisplayLoop;
 	bool bAutorizeCdcTransfer;
 	QueueHandle_t hControlQueue;
@@ -61,8 +62,8 @@ typedef struct TAppData
 
 // Tasks
 void taskCdcLoop(void *pvParameters);
-void taskControlReadLoop(void *pvParameters);
-void taskPidControlLoop(void *pvParameters);
+void taskControlProcessLoop(void *pvParameters);
+void taskPullSensorDataLoop(void *pvParameters);
 void taskDisplayLoop(void *pvParameters);
 
 #define TFT_BACKGROUND ST7735_RGB(30, 60, 30)

@@ -158,10 +158,10 @@ int main (void)
 	xTaskCreate(taskCdcLoop, "CDC", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 1, &g_appData.hTaskCdcLoop);
 
 	// Control loop task has priority 2 above an idle
-	xTaskCreate(taskControlReadLoop, "ControlRead", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 2, &g_appData.hTaskControlReadLoop);
+	xTaskCreate(taskControlProcessLoop, "Control", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 2, &g_appData.hTaskControlProcessLoop);
 
 	// PID Control loop task has priority 3 above an idle
-	xTaskCreate(taskPidControlLoop, "PidControl", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 3, &g_appData.hTaskPidControlLoop);
+	xTaskCreate(taskPullSensorDataLoop, "PullSensorData", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 3, &g_appData.hTaskPullSensorDataLoop);
 
 	// Display loop task has priority 1 above an idle
 	xTaskCreate(taskDisplayLoop, "Display", configMINIMAL_STACK_SIZE * 2, &g_appData, tskIDLE_PRIORITY + 1, &g_appData.hTaskDisplayLoop);
