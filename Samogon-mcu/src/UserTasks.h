@@ -54,8 +54,8 @@ typedef struct TAppData
 	QueueHandle_t hTickQueue;
 	QueueHandle_t hDisplayChangeQueue;
 	TimerHandle_t hTempSampleTimer;
-	float temperature;
-	float internalTemperature;
+	uint32_t powerPercent;
+	bool powerOn;
 	uint32_t zeroCrossCount;
 	NvmUserConfig nvmUserConfig;
 } AppData;

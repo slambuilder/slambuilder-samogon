@@ -62,10 +62,12 @@ void taskControlProcessLoop(void *pvParameters)
 	dcMessage.type = DCM_PowerOutputChanged;
 	dcMessage.powerOn = powerOn;
 	xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
+	g_appData.powerOn = powerOn;
+
 	dcMessage.type = DCM_PowerLevelChanged;
 	dcMessage.powerLevelPercent = powerLevel;
 	xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
-	// TODO
+	g_appData.powerPercent = powerLevel;
 
 	while (true)
 	{
@@ -89,9 +91,7 @@ void taskControlProcessLoop(void *pvParameters)
 			dcMessage.type = DCM_PowerOutputChanged;
 			dcMessage.powerOn = powerOn;
 			xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
-
-			// send message to output control task
-			// TODO
+			g_appData.powerOn = powerOn;
 		}
 		else if (message.type == CM_RotaryEncoderChannelA || message.type == CM_RotaryEncoderChannelB)
 		{
@@ -117,8 +117,7 @@ void taskControlProcessLoop(void *pvParameters)
 					dcMessage.type = DCM_PowerLevelChanged;
 					dcMessage.powerLevelPercent = powerLevel;
 					xQueueSendToBack(g_appData.hDisplayChangeQueue, &dcMessage, 10);
-					// send message to output control task
-					// TODO
+					g_appData.powerPercent = powerLevel;
 				}
 
 				lastTimeChannelA = 0;
@@ -211,8 +210,8 @@ void taskDisplayLoop(void *pvParameters)
 
 	AdafruitGfx_setTextSize(pTft, 1);
 	Sitronix7735_Text(pTft, "power   ", TFT_X_LABEL,   TFT_Y_POWER_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-	Sitronix7735_Text(pTft, "sensor 1", TFT_X_LABEL, TFT_Y_SENSOR1_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
-	Sitronix7735_Text(pTft, "sensor 2", TFT_X_LABEL, TFT_Y_SENSOR2_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
+	Sitronix7735_Text(pTft, "sensor A", TFT_X_LABEL, TFT_Y_SENSOR1_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
+	Sitronix7735_Text(pTft, "sensor B", TFT_X_LABEL, TFT_Y_SENSOR2_LABEL, TFT_TEXT_COLOR, TFT_BACKGROUND, true);
 
 	while (true)
 	{

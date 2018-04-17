@@ -132,6 +132,10 @@ int main (void)
 	udc_start();
 	delay_init();
 
+	ioport_init();
+	ioport_set_pin_dir(CONF_BOARD_SSR_OUT, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(CONF_BOARD_SSR_OUT, true);
+
 	memset(&g_appData, 0, sizeof(g_appData));
 	g_appData.bAutorizeCdcTransfer = true;
 
@@ -235,8 +239,42 @@ void callbackRotaryEncoderChannelB(void)
 	queueMessageFromCallback(&s_initialSignalTicks, CM_RotaryEncoderChannelB);
 }
 
+#define SSR_PWM_MODULO 40
+
 void callbackZeroCross(void)
 {
+	static uint32_t s_moduloCounter = 0;
+	static bool s_ssrOn = false;
+
 	g_appData.zeroCrossCount++;
+	s_moduloCounter = (s_moduloCounter + 1) % SSR_PWM_MODULO;
+
+	if (!g_appData.powerOn)
+	{
+		if (s_ssrOn)
+		{
+			ioport_set_pin_level(CONF_BOARD_SSR_OUT, true);
+			s_ssrOn = false;
+		}
+	}
+	else
+	{
+		if (s_moduloCounter == 0)
+		{
+			if (!s_ssrOn)
+			{
+				ioport_set_pin_level(CONF_BOARD_SSR_OUT, false);
+				s_ssrOn = true;
+			}
+		}
+		else if ( (g_appData.powerPercent * SSR_PWM_MODULO) < (s_moduloCounter * 100))
+		{
+			if (s_ssrOn) 
+			{
+				ioport_set_pin_level(CONF_BOARD_SSR_OUT, true);
+				s_ssrOn = false;
+			}
+		}
+	}
 }
 
